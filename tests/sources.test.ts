@@ -16,8 +16,9 @@ describe('numberSources', () => {
       'ikon-tax': 1, // official title
       'legalinfo-pit': 2, // changes[0].lawSource
       'gov-9-decisions': 3, // meaning[3]
-      'arslan-budget': 4, // evidence: Төсөв
-      'ikon-fiscal-council': 5,
+      'parliament-tax-submitted': 4, // timeline[0]
+      'arslan-budget': 5, // evidence: Төсөв
+      'ikon-fiscal-council': 6,
     })
 
     const budget = numberSources(getStory('budget-2027')!)
@@ -25,10 +26,11 @@ describe('numberSources', () => {
       'ikon-budget': 1, // official title
       'gogo-budget': 2, // summary
       'arslan-budget': 3, // key numbers
-      'ikon-fiscal-council': 4, // positions
-      'gov-9-decisions': 5, // timeline
-      'ubn-fiscal-council': 6, // evidence
-      'med-public-hearing': 7,
+      'legalinfo-fiscal-stability': 4, // explainer
+      'ikon-fiscal-council': 5, // positions
+      'gov-9-decisions': 6, // timeline
+      'ubn-fiscal-council': 7, // evidence
+      'med-public-hearing': 8,
     })
   })
 

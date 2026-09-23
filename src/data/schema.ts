@@ -143,7 +143,7 @@ export const ChangeSchema = z.strictObject({
   clause: Text,
   plainBefore: CitedSchema,
   plainAfter: CitedSchema,
-  lawBefore: Text, // exact law text, or 'TODO_VERIFY'
+  lawBefore: z.string(), // exact law text, 'TODO_VERIFY', or '' when the clause is new
   lawAfter: Text,
   lawSource: Text,
   effectiveFrom: IsoDate.optional(),

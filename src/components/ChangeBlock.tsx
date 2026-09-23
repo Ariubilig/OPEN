@@ -21,6 +21,11 @@ function LawDiff({ before, after }: { before: string; after: string }) {
           {copy.story.added}
         </span>
       </p>
+      {before === '' && (
+        <p className="mt-2 text-small font-semibold text-ins-ink">
+          {copy.story.newClause}
+        </p>
+      )}
       <p className="mt-2 whitespace-pre-line">
         {lawDiff(before, after).map((part, i) =>
           part.kind === 'same' ? (
