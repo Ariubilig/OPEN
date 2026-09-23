@@ -82,6 +82,17 @@ export function StageBadge({ stage }: { stage: Stage }) {
   )
 }
 
+/** Non-interactive type pill, for places that are already a link (related stories). */
+export function TypeLabel({ type }: { type: DocType }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-small font-semibold ${TYPE_STYLES[type]}`}
+    >
+      {type}
+    </span>
+  )
+}
+
 /** Type + stage badges. Relative + z-10 so the badges stay tappable above a card's stretched link. */
 export function BadgeRow({ type, stage }: { type: DocType; stage: Stage }) {
   return (

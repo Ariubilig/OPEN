@@ -120,6 +120,40 @@
   }
 }
 
+/* SourceSheet: 180ms slide + fade (bottom sheet on phones, right panel from 768px) */
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@keyframes sheet-left {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+dialog.source-sheet[open] {
+  animation: sheet-up 180ms ease-out;
+}
+dialog.source-sheet[open]::backdrop {
+  animation: fade-in 180ms ease-out;
+}
+@media (min-width: 48rem) {
+  dialog.source-sheet[open] {
+    animation-name: sheet-left;
+  }
+}
+/* the page behind an open sheet does not scroll */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

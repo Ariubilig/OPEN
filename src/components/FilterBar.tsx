@@ -1,36 +1,12 @@
-import { useId, type ReactNode, type Ref } from 'react'
+import { useId, type Ref } from 'react'
 import { copy } from '../copy'
+import Chip from './Chip'
 
 type ChipRowProps<T extends string> = {
   label: string
   options: readonly T[]
   value: T | null
   onSelect: (value: T | null) => void
-}
-
-function Chip({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-small font-semibold whitespace-nowrap transition-colors ${
-        selected
-          ? 'border-ink bg-ink text-white'
-          : 'border-line bg-surface text-ink hover:border-accent hover:text-accent'
-      }`}
-    >
-      {children}
-    </button>
-  )
 }
 
 /** One single-select row. Scrolls sideways on phones, wraps on wider screens. */

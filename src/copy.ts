@@ -13,6 +13,8 @@ export const copy = {
   a11y: {
     skipToContent: 'Үндсэн агуулга руу шилжих',
     mainNav: 'Үндсэн цэс',
+    newTab: 'шинэ цонхонд нээгдэнэ',
+    onThisPage: 'Энэ мэдээний хэсгүүд',
   },
   feed: {
     intro:
@@ -65,6 +67,9 @@ export const copy = {
     effectiveFrom: 'Мөрдөж эхлэх',
     showLaw: 'Хуулийн эх бичвэрийг харах',
     hideLaw: 'Эх бичвэрийг хураах',
+    lawText: 'Хуулийн эх бичвэр',
+    removed: 'Хасагдсан',
+    added: 'Нэмэгдсэн',
     positionsNote:
       'Бид үнэлгээ өгөхгүй. Талуудын байр суурийг эх сурвалжтай нь харуулна.',
     allGroups: 'Бүгд',
@@ -80,6 +85,7 @@ export const copy = {
     open: 'Эх сурвалжийг нээх',
     close: 'Хаах',
     citedSentence: 'Энэ өгүүлбэр',
+    marker: (n: number) => `Эх сурвалж ${n}`,
   },
   calculator: {
     label: 'Сарын цалин',
