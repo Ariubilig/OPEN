@@ -2,11 +2,19 @@ import { useLayoutEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import FeedCard, { FeatureCard, LeadCard } from '../components/FeedCard'
 import { TopicChips, TypeSelect } from '../components/FilterBar'
+import ForYou from '../components/ForYou'
 import Icon from '../components/Icon'
 import SentenceLines from '../components/SentenceLines'
 import { copy } from '../copy'
 import { stories } from '../data'
-import { DOC_TYPES, TOPICS, type DocType, type Topic } from '../data/schema'
+import {
+  DOC_TYPES,
+  TOPICS,
+  type DocType,
+  type Group,
+  type Topic,
+} from '../data/schema'
+import { parseGroup } from '../lib/groups'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 // Filter options: only the types and topics present in the data, in schema order.
@@ -28,6 +36,7 @@ export default function Feed() {
   const [params, setParams] = useSearchParams()
   const type = pick<DocType>(params.get('type'), typeOptions)
   const topic = pick<Topic>(params.get('topic'), topicOptions)
+  const group = parseGroup(params.get('group'))
   const filtered = type !== null || topic !== null
 
   const list = filtered
@@ -51,16 +60,27 @@ export default function Feed() {
     anchorTop.current = null
   }, [search])
 
-  // Every change is a new history entry, so the browser's back button restores the previous filter.
-  function setFilter(next: { type: DocType | null; topic: Topic | null }) {
-    if (next.type === type && next.topic === topic) return
-    anchorTop.current = barRef.current?.getBoundingClientRect().top ?? null
+  // Every change is a new history entry, so the browser's back button restores the previous one.
+  function update(next: {
+    type: DocType | null
+    topic: Topic | null
+    group: Group | null
+  }) {
     const p = new URLSearchParams()
     if (next.type) p.set('type', next.type)
     if (next.topic) p.set('topic', next.topic)
+    if (next.group) p.set('group', next.group)
     setParams(p)
   }
+  function setFilter(next: { type: DocType | null; topic: Topic | null }) {
+    if (next.type === type && next.topic === topic) return
+    anchorTop.current = barRef.current?.getBoundingClientRect().top ?? null
+    update({ ...next, group })
+  }
   const clear = () => setFilter({ type: null, topic: null })
+  // "Танд юу хамаатай вэ?" sits above the list and grows downwards: nothing to anchor.
+  const setGroup = (next: Group | null) =>
+    next !== group && update({ type, topic, group: next })
 
   return (
     <div className="mx-auto max-w-page px-4 pt-8 md:px-8 md:pt-[72px]">
@@ -99,6 +119,8 @@ export default function Feed() {
           </div>
         </section>
       )}
+
+      {!filtered && <ForYou group={group} onSelect={setGroup} />}
 
       <section aria-labelledby="all-title" className="mt-10 lg:mt-[72px]">
         <div ref={barRef} className="flex flex-col gap-3.5 lg:gap-[18px]">

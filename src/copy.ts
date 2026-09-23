@@ -29,6 +29,12 @@ export const copy = {
     sources: (n: number) => `${n} эх сурвалж`,
     count: (n: number) => `${n} мэдээ`,
   },
+  forYou: {
+    title: 'Танд юу хамаатай вэ?',
+    hint: 'Бүлгээ сонговол танд хамаатай шийдвэрүүд гарч ирнэ.',
+    open: 'Мэдээг унших',
+    clear: 'Арилгах',
+  },
   story: {
     back: 'Буцах',
     officialTitle: 'Албан ёсны нэр',
