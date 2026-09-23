@@ -20,9 +20,9 @@ function BackLink() {
         e.preventDefault()
         navigate(-1)
       }}
-      className="-ml-2 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-small font-semibold text-accent hover:bg-accent-soft"
+      className="-ml-2 inline-flex min-h-11 items-center gap-1.5 self-start rounded-full pr-2.5 pl-2 text-small font-semibold text-ink hover:bg-surface"
     >
-      <Icon name="arrowLeft" />
+      <Icon name="arrowLeft" className="size-[18px]" />
       {copy.story.back}
     </Link>
   )
@@ -35,36 +35,35 @@ export default function StoryHeader({ story }: { story: Story }) {
       : undefined
 
   return (
-    <header className="pt-4">
+    <header className="flex flex-col gap-4 pt-1.5 lg:pt-5">
       <BackLink />
-      <div className="mt-3">
+      <div className="-mt-1 -mb-1 lg:mt-0">
         <BadgeRow type={story.type} stage={story.stage} />
       </div>
-      <ul className="mt-1 flex flex-wrap gap-1.5">
-        {story.topics.map((topic) => (
-          <li
-            key={topic}
-            className="rounded-full bg-surface px-2 py-0.5 text-small text-muted ring-1 ring-line ring-inset"
-          >
-            {topic}
-          </li>
-        ))}
-      </ul>
+      <p className="text-small text-muted">{story.topics.join(' · ')}</p>
 
-      <h1 className="mt-4 text-h1 md:text-h1-lg">
-        <DataText value={story.title} />
+      <h1 className="mt-0.5 text-h1 lg:text-h1-lg">
+        <DataText value={story.title} highlight="mark" />
       </h1>
 
-      <p className="mt-3 text-small text-muted">
-        <span className="font-semibold">{copy.story.officialTitle}: </span>
-        <CitedText cited={story.officialTitle} />
-      </p>
-
-      <p className="mt-5 text-[19px] leading-[30px]">
+      <p className="text-lede lg:text-[21px] lg:leading-8">
         <CitedText cited={story.summary} />
       </p>
 
-      <dl className="mt-5 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-small text-muted tabular-nums">
+      <details className="group border-y border-line">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-small font-semibold text-ink-2 [&::-webkit-details-marker]:hidden">
+          {copy.story.officialTitle}
+          <Icon
+            name="chevronDown"
+            className="size-[18px] text-muted transition-transform group-open:rotate-180"
+          />
+        </summary>
+        <p className="mb-3.5 text-small leading-[21px] text-ink-2">
+          <CitedText cited={story.officialTitle} />
+        </p>
+      </details>
+
+      <dl className="-mt-1 flex flex-wrap gap-x-5 gap-y-1 text-meta text-muted tabular-nums">
         <div className="flex gap-1">
           <dt>{copy.story.published}:</dt>
           <dd>{formatDate(story.publishedAt)}</dd>

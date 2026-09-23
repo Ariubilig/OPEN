@@ -19,10 +19,10 @@ export default function Positions({ items }: { items: Position[] }) {
             key={i}
             className="rounded-card border border-line bg-surface p-4"
           >
-            <p className="text-small font-semibold">
+            <p className="text-[15px] leading-5 font-bold">
               <DataText value={p.actor} />
             </p>
-            <p className="mt-1">
+            <p className="mt-1.5 text-[16px] leading-[25px]">
               <CitedText cited={p} />
             </p>
           </li>

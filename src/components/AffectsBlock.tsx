@@ -1,15 +1,16 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { copy } from '../copy'
 import { GROUPS, type Affect, type Group } from '../data/schema'
 import Chip from './Chip'
 import CitedText from './CitedText'
 
-/** Group filter chips (Бүгд + groups present), then one row per affect. */
+/** Group filter chips (Бүгд + groups present), then the items grouped under each group. */
 export default function AffectsBlock({ items }: { items: Affect[] }) {
   const groups = GROUPS.filter((g) => items.some((a) => a.group === g))
   const [group, setGroup] = useState<Group | null>(null)
-  const listId = useId()
   const shown = group ? items.filter((a) => a.group === group) : items
+  // groups in the order they first appear in the data
+  const order = [...new Set(shown.map((a) => a.group))]
 
   return (
     <>
@@ -17,7 +18,7 @@ export default function AffectsBlock({ items }: { items: Affect[] }) {
         <div
           role="group"
           aria-label={copy.story.sections.affects}
-          className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 mb-3.5 flex gap-2 overflow-x-auto px-4 py-0.5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
         >
           <Chip selected={group === null} onClick={() => setGroup(null)}>
             {copy.story.allGroups}
@@ -29,16 +30,19 @@ export default function AffectsBlock({ items }: { items: Affect[] }) {
           ))}
         </div>
       )}
-      <ul
-        id={listId}
-        className="divide-y divide-line rounded-card border border-line bg-surface"
-      >
-        {shown.map((a, i) => (
-          <li key={`${a.group}-${i}`} className="p-4">
-            <p className="text-small font-semibold text-muted">{a.group}</p>
-            <p className="mt-0.5">
-              <CitedText cited={a} />
-            </p>
+      <ul className="divide-y divide-line rounded-card border border-line bg-surface">
+        {order.map((g) => (
+          <li key={g} className="flex flex-col gap-2 p-4">
+            <h3 className="text-[15px] leading-5 font-bold tracking-normal">
+              {g}
+            </h3>
+            {shown
+              .filter((a) => a.group === g)
+              .map((a, i) => (
+                <p key={i} className="text-[16px] leading-[25px]">
+                  <CitedText cited={a} />
+                </p>
+              ))}
           </li>
         ))}
       </ul>

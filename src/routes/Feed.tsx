@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
-import FeedCard from '../components/FeedCard'
-import FilterBar from '../components/FilterBar'
+import FeedCard, { FeatureCard, LeadCard } from '../components/FeedCard'
+import { TopicChips, TypeSelect } from '../components/FilterBar'
+import Icon from '../components/Icon'
 import { copy } from '../copy'
 import { stories } from '../data'
 import { DOC_TYPES, TOPICS, type DocType, type Topic } from '../data/schema'
@@ -21,6 +22,28 @@ function pick<T extends string>(
   return options.find((o) => o === value) ?? null
 }
 
+/** The tagline, one sentence per line, with its last word on the highlighter. */
+function Tagline({ text }: { text: string }) {
+  const sentences = text.split(/(?<=[.!?])\s+/)
+  const last = sentences.pop() ?? ''
+  const cut = last.lastIndexOf(' ') + 1
+  return (
+    <>
+      {sentences.map((s) => (
+        <span key={s} className="block">
+          {s}
+        </span>
+      ))}
+      <span className="block">
+        {last.slice(0, cut)}
+        <span className="inline-block -rotate-[1.5deg] rounded-lg bg-highlight px-2 pb-0.5 text-ink">
+          {last.slice(cut)}
+        </span>
+      </span>
+    </>
+  )
+}
+
 export default function Feed() {
   useDocumentTitle()
   const [params, setParams] = useSearchParams()
@@ -34,9 +57,10 @@ export default function Feed() {
           (!type || s.type === type) && (!topic || s.topics.includes(topic)),
       )
     : stories.filter((s) => !s.featured)
+  const [lead, ...moreFeatured] = featuredStories
 
-  // Keep the filter bar where the finger is when the featured section hides or returns.
-  const barRef = useRef<HTMLElement>(null)
+  // Keep the filters where the finger is when the featured section hides or returns.
+  const barRef = useRef<HTMLDivElement>(null)
   const anchorTop = useRef<number | null>(null)
   const search = params.toString()
   useLayoutEffect(() => {
@@ -60,65 +84,91 @@ export default function Feed() {
   const clear = () => setFilter({ type: null, topic: null })
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pt-8">
-      <h1 className="text-h1 md:text-h1-lg">{copy.tagline}</h1>
-      <p className="mt-3 max-w-reading text-muted">{copy.feed.intro}</p>
+    <div className="mx-auto max-w-page px-4 pt-8 md:px-8 md:pt-[72px]">
+      <section aria-labelledby="hero-title">
+        <h1 id="hero-title" className="text-display lg:text-display-lg">
+          <Tagline text={copy.tagline} />
+        </h1>
+        <div className="mt-3.5 flex flex-col gap-4 md:mt-7 md:flex-row md:items-end md:justify-between md:gap-12">
+          <p className="max-w-[600px] text-ink-2 md:text-[21px] md:leading-[31px]">
+            {copy.feed.intro}
+          </p>
+          <p className="flex items-start gap-2.5 text-small font-semibold md:pb-1">
+            <Icon name="checkCircle" className="size-5 text-accent" />
+            {copy.principle}
+          </p>
+        </div>
+      </section>
 
-      {!filtered && featuredStories.length > 0 && (
-        <section aria-labelledby="featured-title" className="mt-10">
-          <h2 id="featured-title" className="text-h2">
+      {!filtered && lead && (
+        <section aria-labelledby="featured-title" className="mt-9 lg:mt-16">
+          <h2
+            id="featured-title"
+            className="text-[22px] leading-7 lg:text-[28px] lg:leading-[34px]"
+          >
             {copy.feed.featured}
           </h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {featuredStories.map((s) => (
-              <FeedCard key={s.id} story={s} size="large" />
+          <div
+            className={`mt-3.5 grid gap-3 md:grid-cols-2 lg:mt-[18px] lg:gap-6 ${
+              moreFeatured.length === 1 ? 'lg:grid-cols-[7fr_5fr]' : ''
+            }`}
+          >
+            <LeadCard story={lead} />
+            {moreFeatured.map((s) => (
+              <FeatureCard key={s.id} story={s} />
             ))}
           </div>
         </section>
       )}
 
-      <div className="mt-10">
-        <FilterBar
-          ref={barRef}
-          types={typeOptions}
-          topics={topicOptions}
-          type={type}
-          topic={topic}
-          onTypeChange={(t) => setFilter({ type: t, topic })}
-          onTopicChange={(t) => setFilter({ type, topic: t })}
-        />
-      </div>
-
-      <section aria-labelledby="all-title" className="mt-8">
-        <div className="flex min-h-11 flex-wrap items-center gap-x-3">
-          <h2 id="all-title" className="text-h2">
-            {copy.feed.all}
-          </h2>
-          <span
-            aria-live="polite"
-            className="text-small text-muted tabular-nums"
-          >
-            {copy.feed.count(list.length)}
-          </span>
+      <section aria-labelledby="all-title" className="mt-10 lg:mt-[72px]">
+        <div ref={barRef} className="flex flex-col gap-3.5 lg:gap-[18px]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-baseline gap-2.5 whitespace-nowrap">
+              <h2
+                id="all-title"
+                className="text-[22px] leading-7 lg:text-[28px] lg:leading-[34px]"
+              >
+                {copy.feed.all}
+              </h2>
+              <span
+                aria-live="polite"
+                className="text-small text-muted tabular-nums"
+              >
+                {copy.feed.count(list.length)}
+              </span>
+            </div>
+            <TypeSelect
+              options={typeOptions}
+              value={type}
+              onChange={(t) => setFilter({ type: t, topic })}
+            />
+          </div>
+          <TopicChips
+            options={topicOptions}
+            value={topic}
+            onSelect={(t) => setFilter({ type, topic: t })}
+          />
           {filtered && (
             <button
               type="button"
               onClick={clear}
-              className="ml-auto inline-flex min-h-11 items-center text-small font-semibold text-accent underline underline-offset-2"
+              className="-my-1.5 inline-flex min-h-11 items-center gap-1.5 self-end text-small font-semibold text-accent underline underline-offset-3 hover:no-underline"
             >
+              <Icon name="close" className="size-4" />
               {copy.feed.clear}
             </button>
           )}
         </div>
 
         {list.length > 0 ? (
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:mt-6 lg:gap-5">
             {list.map((s) => (
               <FeedCard key={s.id} story={s} />
             ))}
           </div>
         ) : (
-          <div className="mt-4 rounded-card border border-dashed border-line bg-surface p-6 text-center">
+          <div className="mt-4 rounded-card border border-dashed border-line-strong bg-surface p-6 text-center">
             <p>{copy.feed.empty}</p>
             <button
               type="button"

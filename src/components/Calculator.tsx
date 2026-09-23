@@ -17,10 +17,11 @@ const MAX_SALARY = 20_000_000
 const PRESETS = [500_000, 792_000, 1_000_000, 2_000_000, 3_000_000]
 const DEFAULT_SALARY = 2_000_000
 
-/** Monthly personal income tax now / from 2027 / from 2028 (brief §7). */
+/** Monthly personal income tax now / from 2027 / from 2028 (brief §7), as bars on an ink card. */
 export default function Calculator() {
   const [salary, setSalary] = useState<number | null>(DEFAULT_SALARY)
   const inputId = useId()
+  const presetsId = useId()
   const assumptionId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const caretDigits = useRef<number | null>(null)
@@ -53,38 +54,58 @@ export default function Calculator() {
     result: computePIT(value, y.brackets),
   }))
   const now = results[0]?.result
+  const top = Math.max(
+    0,
+    ...results.map(({ result }) => (result.status === 'ok' ? result.tax : 0)),
+  )
 
   return (
-    <div>
-      <label htmlFor={inputId} className="text-small font-semibold">
-        {copy.calculator.label}
-      </label>
-      <div className="relative mt-1">
-        <input
-          ref={inputRef}
-          id={inputId}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          aria-describedby={assumptionId}
-          placeholder={copy.calculator.placeholder}
-          value={salary === null ? '' : formatThousands(salary)}
-          onChange={onChange}
-          className="min-h-12 w-full rounded-card border border-line bg-surface py-2 pr-10 pl-4 font-serif text-[22px] font-bold tabular-nums placeholder:font-sans placeholder:text-body placeholder:font-normal placeholder:text-muted focus:border-accent"
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted"
+    <div className="on-ink flex flex-col gap-[18px] rounded-card-lg bg-ink p-5 text-on-ink md:p-7">
+      <div className="flex flex-col gap-2">
+        <label
+          htmlFor={inputId}
+          className="text-small font-semibold text-on-ink-2"
         >
-          ₮
-        </span>
+          {copy.calculator.label}
+        </label>
+        <div className="relative">
+          <input
+            ref={inputRef}
+            id={inputId}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            aria-describedby={assumptionId}
+            placeholder={copy.calculator.placeholder}
+            value={salary === null ? '' : formatThousands(salary)}
+            onChange={onChange}
+            className="h-16 w-full rounded-2xl border-[1.5px] border-ink-border bg-ink-raised pr-12 pl-[18px] text-[30px] font-extrabold tracking-[-0.02em] text-on-ink tabular-nums placeholder:text-body placeholder:font-normal placeholder:tracking-normal placeholder:text-on-ink-3 focus:border-highlight"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 right-[18px] -translate-y-1/2 text-[22px] font-bold text-on-ink-3"
+          >
+            ₮
+          </span>
+        </div>
       </div>
 
-      <div role="group" aria-label={copy.calculator.presets} className="mt-3">
-        <p className="text-small text-muted">{copy.calculator.presets}</p>
-        <div className="-mx-4 mt-1 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+      <div
+        role="group"
+        aria-labelledby={presetsId}
+        className="flex flex-col gap-2"
+      >
+        <p id={presetsId} className="text-meta text-on-ink-3">
+          {copy.calculator.presets}
+        </p>
+        <div className="flex flex-wrap gap-2">
           {PRESETS.map((p) => (
-            <Chip key={p} selected={salary === p} onClick={() => setSalary(p)}>
+            <Chip
+              key={p}
+              tone="dark"
+              selected={salary === p}
+              onClick={() => setSalary(p)}
+            >
               {formatThousands(p)}
             </Chip>
           ))}
@@ -92,29 +113,37 @@ export default function Calculator() {
       </div>
 
       {!taxRules.verified && (
-        <p className="mt-5 rounded-lg border border-dashed border-placeholder-line bg-placeholder-bg px-3 py-2 text-small font-semibold text-placeholder-ink">
+        <p className="rounded-lg border border-dashed border-placeholder-line bg-placeholder-bg px-3 py-2 text-small font-semibold text-placeholder-ink">
           {copy.calculator.rulesUnverified}
         </p>
       )}
 
-      <ul aria-live="polite" className="mt-3 grid gap-3 sm:grid-cols-3">
-        {results.map(({ label, result }) => (
-          <ResultCard key={label} label={label} result={result} now={now} />
+      <ul aria-live="polite" className="mt-1 flex flex-col">
+        {results.map(({ label, result }, i) => (
+          <ResultRow
+            key={label}
+            label={label}
+            result={result}
+            now={now}
+            top={top}
+            first={i === 0}
+          />
         ))}
       </ul>
 
-      <div className="mt-4 space-y-1 text-small text-muted">
-        <p id={assumptionId}>
+      <div className="flex flex-col border-t border-ink-line pt-3.5 text-meta leading-[19px] text-on-ink-2">
+        <p id={assumptionId} className="mb-1">
           <DataText value={taxRules.assumption} />
         </p>
-        <p>
-          {copy.calculator.sourceLabel}:{' '}
-          <ExternalLink href={taxRules.source.url}>
+        <p className="flex items-baseline gap-x-1.5">
+          <span className="shrink-0">{copy.calculator.sourceLabel}:</span>
+          <ExternalLink href={taxRules.source.url} tone="highlight">
             {taxRules.source.publisher}
           </ExternalLink>
-          <span aria-hidden="true"> · </span>
-          {copy.calculator.lawLabel}:{' '}
-          <ExternalLink href={taxRules.lawSource.url}>
+        </p>
+        <p className="flex items-baseline gap-x-1.5">
+          <span className="shrink-0">{copy.calculator.lawLabel}:</span>
+          <ExternalLink href={taxRules.lawSource.url} tone="highlight">
             {taxRules.lawSource.title}
           </ExternalLink>
         </p>
@@ -123,43 +152,66 @@ export default function Calculator() {
   )
 }
 
-function ResultCard({
+function ResultRow({
   label,
   result,
   now,
+  top,
+  first,
 }: {
   label: string
   result: PitResult
   now: PitResult | undefined
+  top: number
+  first: boolean
 }) {
   const saving =
     result.status === 'ok' && now?.status === 'ok' ? now.tax - result.tax : 0
+  const width =
+    result.status === 'ok' && top > 0
+      ? Math.max((result.tax / top) * 100, 3)
+      : 0
   return (
-    <li className="flex flex-col rounded-card border border-line bg-surface p-4">
-      <p className="text-small font-semibold text-muted">
-        <DataText value={label} />
-      </p>
+    <li className="flex flex-col gap-2.5 border-t border-ink-line py-4 last:pb-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-small font-semibold text-on-ink-2">
+          <DataText value={label} />
+        </span>
+        {result.status === 'ok' ? (
+          <span className="text-[24px] leading-[30px] font-extrabold tracking-[-0.02em] tabular-nums md:text-[28px]">
+            {formatMNT(result.tax)}
+            <span className="text-meta font-medium tracking-normal text-on-ink-3">
+              {' '}
+              {copy.calculator.perMonth}
+            </span>
+          </span>
+        ) : (
+          <span className="rounded-full border border-dashed border-placeholder-line bg-placeholder-bg px-2.5 py-0.5 text-small font-semibold text-placeholder-ink">
+            {copy.calculator.unverified}
+          </span>
+        )}
+      </div>
       {result.status === 'ok' ? (
         <>
-          <p className="mt-1 font-serif text-[26px] leading-8 font-bold tabular-nums">
-            {formatMNT(result.tax)}
-          </p>
-          <p className="text-small text-muted">{copy.calculator.perMonth}</p>
+          <span
+            aria-hidden="true"
+            className="block h-2.5 rounded-full bg-ink-line"
+          >
+            <span
+              className={`block h-2.5 rounded-full ${first ? 'bg-on-ink' : 'bg-highlight'}`}
+              style={{ width: `${width}%` }}
+            />
+          </span>
           {saving > 0 && (
-            <p className="mt-2 self-start rounded-full bg-ins-bg px-2.5 py-0.5 text-small font-semibold text-ins-ink tabular-nums">
+            <p className="self-end text-meta font-semibold text-highlight tabular-nums">
               {copy.calculator.less(formatMNT(saving))}
             </p>
           )}
         </>
       ) : (
-        <>
-          <p className="mt-2 self-start rounded-full border border-dashed border-placeholder-line bg-placeholder-bg px-2.5 py-0.5 text-small font-semibold text-placeholder-ink">
-            {copy.calculator.unverified}
-          </p>
-          <p className="mt-2 text-small text-muted">
-            {copy.calculator.unverifiedHelp}
-          </p>
-        </>
+        <p className="text-meta text-on-ink-2">
+          {copy.calculator.unverifiedHelp}
+        </p>
       )}
     </li>
   )

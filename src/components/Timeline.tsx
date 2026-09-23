@@ -1,52 +1,34 @@
 import { copy } from '../copy'
-import { isIsoDate, TODO, type TimelineItem } from '../data/schema'
-import { daysBetween, formatDate, today } from '../lib/format'
+import type { TimelineItem } from '../data/schema'
+import { today } from '../lib/format'
+import { countdown, nextDatedIndex } from '../lib/timeline'
 import { MarkedText } from './CitedText'
 import DataText from './DataText'
-import Placeholder from './Placeholder'
-
-function countdown(date: string, now: string): string {
-  const days = daysBetween(now, date)
-  if (days === 0) return copy.timeline.today
-  return days > 0 ? copy.timeline.inDays(days) : copy.timeline.daysAgo(-days)
-}
+import { StepDate, StepLabel } from './Stage'
 
 function Dot({ status }: { status: TimelineItem['status'] }) {
-  const base = 'relative z-10 mt-1 block rounded-full'
-  if (status === 'done') return <span className={`${base} size-4 bg-accent`} />
+  const base = 'relative mt-0.5 block size-3.5 rounded-full'
+  if (status === 'done') return <span className={`${base} bg-ink`} />
   if (status === 'current')
     return (
       <span
-        className={`${base} size-4 border-[3px] border-accent bg-surface ring-4 ring-accent/20`}
+        className={`${base} bg-highlight shadow-[inset_0_0_0_2.5px_var(--ink)]`}
       />
     )
   return (
     <span
-      className={`${base} size-4 border-2 border-dashed border-muted/60 bg-paper`}
+      className={`${base} border-2 border-dashed border-on-ink-3 bg-paper`}
     />
   )
 }
 
-function When({ item }: { item: TimelineItem }) {
-  if (item.date === TODO) return <Placeholder />
-  if (item.date === null)
-    return (
-      <span className="text-muted">
-        <DataText value={item.dateText ?? copy.timeline.notScheduled} />
-      </span>
-    )
-  return <time dateTime={item.date}>{formatDate(item.date)}</time>
-}
-
 /**
- * Vertical stepper: done = filled dot, current = ring + "Одоо энд", upcoming = dashed.
- * The next upcoming item with a date gets a countdown.
+ * Vertical stepper, date first: done = ink dot, current = highlighter + "Одоо энд",
+ * upcoming = dashed. The next upcoming step with a date gets a countdown.
  */
 export default function Timeline({ items }: { items: TimelineItem[] }) {
   const now = today()
-  const next = items.findIndex(
-    (t) => t.status === 'upcoming' && t.date !== null && isIsoDate(t.date),
-  )
+  const next = nextDatedIndex(items)
 
   return (
     <ol>
@@ -56,15 +38,15 @@ export default function Timeline({ items }: { items: TimelineItem[] }) {
         return (
           <li
             key={i}
-            className="relative grid grid-cols-[1rem_1fr_auto] gap-x-3 pb-7 last:pb-0"
+            className="relative grid grid-cols-[14px_minmax(0,1fr)] gap-x-3.5 pb-6 last:pb-0"
           >
             {following && (
               <span
                 aria-hidden="true"
-                className={`absolute top-6 bottom-0 left-[7px] border-l-2 ${
+                className={`absolute top-[22px] -bottom-0.5 left-1.5 border-l-2 ${
                   following.status === 'upcoming'
-                    ? 'border-dashed border-muted/50'
-                    : 'border-accent'
+                    ? 'border-dashed border-line-strong'
+                    : 'border-ink'
                 }`}
               />
             )}
@@ -72,32 +54,36 @@ export default function Timeline({ items }: { items: TimelineItem[] }) {
               <Dot status={t.status} />
             </span>
 
-            <div className="min-w-0">
-              {t.status !== 'current' && (
-                <span className="sr-only">
-                  {t.status === 'done'
-                    ? copy.timeline.done
-                    : copy.timeline.upcoming}
-                  :{' '}
-                </span>
-              )}
-              <p
-                className={
-                  t.status === 'upcoming' ? 'text-muted' : 'font-semibold'
-                }
-              >
-                {t.source && !t.note ? (
-                  <MarkedText
-                    text={t.label}
-                    source={t.source}
-                    sentence={sentence}
-                  />
-                ) : (
-                  <DataText value={t.label} />
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="text-meta font-bold text-muted tabular-nums">
+                <StepDate item={t} />
+                {i === next && t.date && (
+                  <span className="text-accent">
+                    {' · '}
+                    {countdown(t.date, now)}
+                  </span>
                 )}
               </p>
+              <p
+                className={`text-[16px] leading-[23px] ${
+                  t.status === 'upcoming'
+                    ? 'font-medium text-ink-2'
+                    : 'font-semibold'
+                }`}
+              >
+                {t.status !== 'current' && (
+                  <span className="sr-only">
+                    {t.status === 'done'
+                      ? copy.timeline.done
+                      : copy.timeline.upcoming}
+                    :{' '}
+                  </span>
+                )}
+                {/* with a note, the marker goes after the note instead */}
+                <StepLabel item={t} cite={!t.note} />
+              </p>
               {t.note && (
-                <p className="text-small text-muted">
+                <p className="text-small leading-[21px] text-muted">
                   {t.source ? (
                     <MarkedText
                       text={t.note}
@@ -110,17 +96,8 @@ export default function Timeline({ items }: { items: TimelineItem[] }) {
                 </p>
               )}
               {t.status === 'current' && (
-                <p className="mt-1.5 inline-flex rounded-full bg-ink px-2.5 py-0.5 text-small font-semibold text-white">
+                <p className="mt-1 inline-flex h-6 items-center self-start rounded-full bg-highlight px-2.5 text-overline font-extrabold text-ink shadow-[inset_0_0_0_1.5px_var(--ink)]">
                   {copy.timeline.here}
-                </p>
-              )}
-            </div>
-
-            <div className="pt-0.5 text-right text-small tabular-nums">
-              <When item={t} />
-              {i === next && t.date && (
-                <p className="font-semibold text-accent">
-                  {countdown(t.date, now)}
                 </p>
               )}
             </div>

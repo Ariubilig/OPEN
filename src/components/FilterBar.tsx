@@ -1,82 +1,73 @@
-import { useId, type Ref } from 'react'
 import { copy } from '../copy'
 import Chip from './Chip'
+import Icon from './Icon'
 
-type ChipRowProps<T extends string> = {
-  label: string
-  options: readonly T[]
-  value: T | null
-  onSelect: (value: T | null) => void
-}
-
-/** One single-select row. Scrolls sideways on phones, wraps on wider screens. */
-function ChipRow<T extends string>({
-  label,
+/**
+ * Document type filter: a native <select> laid invisibly over a pill that shows the current
+ * choice ("Төрөл: Бүгд"), so the pill can be as wide as its text and still open the native picker.
+ */
+export function TypeSelect<T extends string>({
   options,
   value,
-  onSelect,
-}: ChipRowProps<T>) {
-  const labelId = useId()
+  onChange,
+}: {
+  options: readonly T[]
+  value: T | null
+  onChange: (value: T | null) => void
+}) {
   return (
-    <div role="group" aria-labelledby={labelId}>
-      <p id={labelId} className="text-small font-semibold text-muted">
-        {label}
-      </p>
-      <div className="-mx-4 mt-1 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
-        <Chip selected={value === null} onClick={() => onSelect(null)}>
-          {copy.feed.any}
-        </Chip>
+    <div className="relative inline-flex h-11 max-w-[190px] shrink-0 items-center gap-1.5 rounded-full border border-line-strong bg-surface pr-3 pl-4 text-small font-semibold text-ink transition-colors hover:border-ink has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-accent md:max-w-[300px]">
+      <span aria-hidden="true" className="truncate">
+        {copy.feed.type}: {value ?? copy.feed.any}
+      </span>
+      <Icon name="chevronDown" className="size-[18px]" />
+      <select
+        aria-label={copy.feed.type}
+        value={value ?? ''}
+        onChange={(e) =>
+          onChange(options.find((o) => o === e.target.value) ?? null)
+        }
+        className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+      >
+        <option value="">{copy.feed.any}</option>
         {options.map((option) => (
-          <Chip
-            key={option}
-            selected={value === option}
-            onClick={() => onSelect(option)}
-          >
+          <option key={option} value={option}>
             {option}
-          </Chip>
+          </option>
         ))}
-      </div>
+      </select>
     </div>
   )
 }
 
-type Props<Type extends string, Topic extends string> = {
-  types: readonly Type[]
-  topics: readonly Topic[]
-  type: Type | null
-  topic: Topic | null
-  onTypeChange: (type: Type | null) => void
-  onTopicChange: (topic: Topic | null) => void
-  ref?: Ref<HTMLElement>
-}
-
-export default function FilterBar<Type extends string, Topic extends string>({
-  types,
-  topics,
-  type,
-  topic,
-  onTypeChange,
-  onTopicChange,
-  ref,
-}: Props<Type, Topic>) {
-  const titleId = useId()
+/** Single-select topic chips: one row that scrolls sideways on phones, wraps on wider screens. */
+export function TopicChips<T extends string>({
+  options,
+  value,
+  onSelect,
+}: {
+  options: readonly T[]
+  value: T | null
+  onSelect: (value: T | null) => void
+}) {
   return (
-    <section ref={ref} aria-labelledby={titleId} className="space-y-3">
-      <h2 id={titleId} className="sr-only">
-        {copy.feed.filters}
-      </h2>
-      <ChipRow
-        label={copy.feed.type}
-        options={types}
-        value={type}
-        onSelect={onTypeChange}
-      />
-      <ChipRow
-        label={copy.feed.topic}
-        options={topics}
-        value={topic}
-        onSelect={onTopicChange}
-      />
-    </section>
+    <div
+      role="group"
+      aria-label={copy.feed.topic}
+      className="-mx-4 flex gap-2 overflow-x-auto px-4 py-0.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
+    >
+      <Chip selected={value === null} onClick={() => onSelect(null)}>
+        {copy.feed.any}
+      </Chip>
+      {options.map((option) => (
+        <Chip
+          key={option}
+          selected={value === option}
+          onClick={() => onSelect(option)}
+        >
+          {option}
+        </Chip>
+      ))}
+    </div>
   )
 }

@@ -79,6 +79,21 @@ function LawPending({ before, after }: { before: string; after: string }) {
   )
 }
 
+function BeforeAfterTag({ after }: { after: boolean }) {
+  return (
+    <span
+      className={`inline-flex h-[22px] items-center self-start rounded-md px-2 text-overline font-extrabold tracking-[0.06em] uppercase ${
+        after
+          ? 'bg-highlight text-ink'
+          : 'bg-paper text-muted shadow-[inset_0_0_0_1px_var(--line-strong)]'
+      }`}
+    >
+      {after ? copy.story.after : copy.story.before}
+    </span>
+  )
+}
+
+/** One changed clause: Өмнө → Шинэ in plain words, then the exact law text on demand. */
 export default function ChangeBlock({ change }: { change: Change }) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
@@ -86,33 +101,37 @@ export default function ChangeBlock({ change }: { change: Change }) {
     change.lawBefore.includes(TODO) || change.lawAfter.includes(TODO)
 
   return (
-    <div className="rounded-card border border-line bg-surface p-4">
-      <p className="text-small font-semibold text-muted">
+    <article className="flex flex-col gap-4 rounded-card border border-line bg-surface px-4 pt-4 pb-2.5 md:px-6 md:pt-[22px] md:pb-3.5">
+      <p className="text-meta leading-[19px] font-semibold text-muted">
         <DataText value={change.clause} />
       </p>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg bg-paper p-3">
-          <p className="text-small font-semibold text-muted">
-            {copy.story.before}
-          </p>
-          <p className="mt-1">
+      <div className="flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,1fr)_36px_minmax(0,1fr)] md:items-start md:gap-x-[18px]">
+        <div className="flex flex-col gap-2">
+          <BeforeAfterTag after={false} />
+          <p className="text-[16px] leading-[25px] text-ink-2">
             <CitedText cited={change.plainBefore} />
           </p>
         </div>
-        <div className="rounded-lg bg-accent-soft p-3">
-          <p className="text-small font-semibold text-accent">
-            {copy.story.after}
-          </p>
-          <p className="mt-1">
+        <span
+          aria-hidden="true"
+          className="inline-flex size-8 items-center justify-center rounded-full bg-paper md:mt-[26px] md:size-9"
+        >
+          <Icon name="arrowDown" className="size-[18px] md:hidden" />
+          <Icon name="arrowRight" className="hidden size-[18px] md:block" />
+        </span>
+        <div className="flex flex-col gap-2">
+          <BeforeAfterTag after />
+          <p className="text-[16px] leading-[25px] font-medium">
             <CitedText cited={change.plainAfter} />
           </p>
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 border-t border-line pt-1.5">
         {change.effectiveFrom && (
-          <p className="rounded-full bg-paper px-2.5 py-0.5 text-small font-semibold text-ink tabular-nums ring-1 ring-line ring-inset">
+          <p className="inline-flex items-center gap-[7px] text-meta font-semibold tabular-nums">
+            <Icon name="calendar" className="size-4 text-muted" />
             {copy.story.effectiveFrom}: {formatDate(change.effectiveFrom)}
           </p>
         )}
@@ -121,7 +140,7 @@ export default function ChangeBlock({ change }: { change: Change }) {
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((o) => !o)}
-          className="-mr-2 ml-auto inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-small font-semibold text-accent hover:bg-accent-soft"
+          className="-mr-1.5 ml-auto inline-flex min-h-11 items-center gap-1 rounded-full px-1.5 text-small font-semibold text-accent hover:text-accent-strong"
         >
           {open ? copy.story.hideLaw : copy.story.showLaw}
           <Icon
@@ -134,7 +153,7 @@ export default function ChangeBlock({ change }: { change: Change }) {
       <div
         id={panelId}
         hidden={!open}
-        className="mt-2 rounded-lg border border-line p-3 text-[16px] leading-[26px]"
+        className="mb-2 rounded-xl border border-line p-3 text-[16px] leading-[26px]"
       >
         <p className="mb-2 text-small font-semibold text-muted">
           <MarkedText
@@ -149,6 +168,6 @@ export default function ChangeBlock({ change }: { change: Change }) {
           <LawDiff before={change.lawBefore} after={change.lawAfter} />
         )}
       </div>
-    </div>
+    </article>
   )
 }

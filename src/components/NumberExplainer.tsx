@@ -13,7 +13,7 @@ export default function NumberExplainer({
   return (
     <aside
       aria-labelledby={titleId}
-      className="mt-4 rounded-card border-l-4 border-accent bg-accent-soft p-4"
+      className="mt-4 rounded-card bg-accent-soft p-4 md:p-5"
     >
       <h3 id={titleId} className="text-[19px] leading-[26px]">
         <DataText value={explainer.question} />

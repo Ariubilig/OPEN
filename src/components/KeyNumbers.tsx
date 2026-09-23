@@ -11,10 +11,10 @@ export default function KeyNumbers({ items }: { items: KeyNumber[] }) {
           key={i}
           className="flex flex-col rounded-card border border-line bg-surface p-3.5 sm:p-4"
         >
-          <p className="text-small text-muted">
+          <p className="text-meta text-muted">
             <DataText value={k.label} />
           </p>
-          <p className="mt-1 font-serif text-[21px] leading-7 font-bold tabular-nums sm:text-[24px] sm:leading-8">
+          <p className="mt-1 text-[21px] leading-7 font-extrabold tracking-[-0.02em] tabular-nums sm:text-[26px] sm:leading-8">
             {k.value === TODO ? (
               <DataText value={k.value} />
             ) : (
@@ -26,7 +26,7 @@ export default function KeyNumbers({ items }: { items: KeyNumber[] }) {
             )}
           </p>
           {k.note && (
-            <p className="mt-1 text-small text-muted">
+            <p className="mt-1 text-meta text-muted">
               <DataText value={k.note} />
             </p>
           )}

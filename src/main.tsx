@@ -1,6 +1,4 @@
-import '@fontsource/noto-sans/400.css'
-import '@fontsource/noto-sans/600.css'
-import '@fontsource/noto-serif/700.css'
+import '@fontsource-variable/geologica'
 import './index.css'
 
 import { StrictMode } from 'react'

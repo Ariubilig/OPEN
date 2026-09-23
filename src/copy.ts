@@ -26,9 +26,7 @@ export const copy = {
     any: 'Бүгд',
     clear: 'Шүүлтүүр арилгах',
     empty: 'Энэ шүүлтүүрт тохирох мэдээ алга.',
-    fullStory: 'Бүрэн тайлбартай',
     sources: (n: number) => `${n} эх сурвалж`,
-    filters: 'Шүүлтүүр',
     count: (n: number) => `${n} мэдээ`,
   },
   story: {
@@ -77,6 +75,7 @@ export const copy = {
     notFoundYet: 'Одоогоор олдсонгүй',
     disclaimer: 'Энэ нь мэдээлэл бөгөөд хуулийн зөвлөгөө биш.',
     reportError: 'Алдаа мэдээлэх',
+    allStages: 'Бүх шат',
   },
   source: {
     official: 'Албан эх сурвалж',
@@ -87,6 +86,11 @@ export const copy = {
     close: 'Хаах',
     citedSentence: 'Энэ өгүүлбэр',
     marker: (n: number) => `Эх сурвалж ${n}`,
+    position: (n: number, total: number) => `Эх сурвалж ${n} / ${total}`,
+    kindHint: {
+      official: 'Төрийн байгууллагын албан ёсны эх сурвалж.',
+      media: 'Хэвлэл мэдээллийн нийтлэл. Баримт, огноог лавлахад ашигласан.',
+    } satisfies Record<'official' | 'media', string>,
   },
   calculator: {
     label: 'Сарын цалин',
@@ -109,6 +113,7 @@ export const copy = {
     daysAgo: (n: number) => `${n} хоногийн өмнө`,
     done: 'Болсон',
     upcoming: 'Хүлээгдэж буй',
+    next: 'Дараагийн шат',
   },
   participate: {
     intro:

@@ -1,11 +1,12 @@
 import { copy } from '../copy'
-import type { Story } from '../data/schema'
+import { TODO, type Story } from '../data/schema'
 import { useSourceSheet } from '../lib/sourceSheet'
 import DataText from './DataText'
-import ExternalLink from './ExternalLink'
+import Icon from './Icon'
+import Placeholder from './Placeholder'
 import { KindBadge, SourceDates, SourceNumber } from './SourceMeta'
 
-/** Principle line, then every source in marker order. */
+/** Principle line, then every source in marker order; each row opens its source in a new tab. */
 export default function SourcesBlock({ story }: { story: Story }) {
   const { numbers } = useSourceSheet()
   const ordered = [...story.sources].sort(
@@ -13,31 +14,50 @@ export default function SourcesBlock({ story }: { story: Story }) {
   )
   return (
     <>
-      <p className="text-small font-semibold">{copy.principle}</p>
-      <ol className="mt-4 space-y-3">
+      <p className="flex items-start gap-2.5 text-[15px] leading-[22px] font-semibold">
+        <Icon name="checkCircle" className="size-5 text-accent" />
+        {copy.principle}
+      </p>
+      <ol className="mt-4 divide-y divide-line rounded-card border border-line bg-surface">
         {ordered.map((s) => (
           <li
             key={s.id}
-            className="flex gap-3 rounded-card border border-line bg-surface p-4"
+            className="group relative grid grid-cols-[28px_minmax(0,1fr)] gap-x-3 p-4 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-accent"
           >
             <SourceNumber n={numbers.get(s.id) ?? 0} />
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <p className="font-semibold break-words">
-                <DataText value={s.title} />
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <p className="text-[16px] leading-[22px] font-semibold break-words">
+                {s.url === TODO ? (
+                  <>
+                    <DataText value={s.title} /> <Placeholder />
+                  </>
+                ) : (
+                  // the whole row is the link (a large tap target)
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-ink group-hover:text-accent-strong after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+                  >
+                    <DataText value={s.title} />
+                    <Icon
+                      name="externalLink"
+                      className="ml-1.5 inline size-[15px] align-[-0.125em] text-accent"
+                    />
+                    <span className="sr-only"> ({copy.a11y.newTab})</span>
+                  </a>
+                )}
               </p>
-              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-muted">
+              <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-meta text-muted">
                 <DataText value={s.publisher} />
                 <KindBadge kind={s.kind} />
               </p>
               <SourceDates source={s} />
               {s.note && (
-                <p className="text-small">
+                <p className="text-meta leading-[19px] text-ink-2">
                   <DataText value={s.note} />
                 </p>
               )}
-              <ExternalLink href={s.url} className="text-small">
-                {copy.source.open}
-              </ExternalLink>
             </div>
           </li>
         ))}

@@ -1,25 +1,34 @@
 import type { ReactNode } from 'react'
 
-/** A single-select filter chip (feed filters, story group filter). */
+/**
+ * A single-select chip (feed topics, story group filter, calculator presets).
+ * Selected = ink (or the highlighter on dark surfaces), never the highlighter alone on paper.
+ */
 export default function Chip({
   selected,
   onClick,
   children,
+  tone = 'light',
 }: {
   selected: boolean
   onClick: () => void
   children: ReactNode
+  tone?: 'light' | 'dark'
 }) {
+  const colors =
+    tone === 'dark'
+      ? selected
+        ? 'border-highlight bg-highlight text-ink'
+        : 'border-ink-border bg-transparent text-on-ink hover:border-on-ink-3'
+      : selected
+        ? 'border-ink bg-ink text-white'
+        : 'border-line-strong bg-surface text-ink hover:border-ink'
   return (
     <button
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-small font-semibold whitespace-nowrap transition-colors ${
-        selected
-          ? 'border-ink bg-ink text-white'
-          : 'border-line bg-surface text-ink hover:border-accent hover:text-accent'
-      }`}
+      className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-small font-semibold whitespace-nowrap tabular-nums transition-colors ${colors}`}
     >
       {children}
     </button>

@@ -1,14 +1,30 @@
 @import 'tailwindcss';
 
-/* Design tokens (§11). Components use the Tailwind names mapped in @theme below. */
+/* Design tokens. Components use the Tailwind names mapped in @theme below.
+   One idea runs through the UI: ink = what you can tap, highlighter = what matters,
+   violet = where it comes from. */
 :root {
-  --paper: #f6f4ef;
+  --paper: #f3f3ee;
   --surface: #ffffff;
-  --ink: #1b1f27;
-  --muted: #5e6673;
-  --line: #e2ddd2;
-  --accent: #1e4d8c;
-  --accent-soft: #e7eef8;
+  --ink: #121318;
+  --ink-2: #3f4350; /* secondary text, 9.9:1 on white */
+  --muted: #626776; /* meta and captions, 5.1:1 on paper */
+  --line: #e2e2da;
+  --line-strong: #d3d3ca;
+  --empty: #deded5; /* stage tracker: upcoming step */
+  --highlight: #e4fa4b; /* highlighter, always under ink text (16:1) */
+  --accent: #5b3df5; /* violet: citations, links, focus ring (6.1:1 on white) */
+  --accent-strong: #4a2ee0;
+  --accent-soft: #eeeafe;
+
+  /* On ink surfaces (lead card, calculator, participate, footer) */
+  --on-ink: #ffffff;
+  --on-ink-2: #b7bac4; /* 9.6:1 on ink */
+  --on-ink-3: #8e929e; /* 6.0:1 on ink */
+  --ink-line: #2a2c34;
+  --ink-raised: #1c1e25;
+  --ink-border: #3a3d47;
+
   --placeholder-bg: #fff6db;
   --placeholder-line: #c9982b;
   --placeholder-ink: #6b4e0e;
@@ -17,34 +33,36 @@
   --ins-bg: #e6f4ea;
   --ins-ink: #1d5530;
 
-  /* Document-type badges: soft background + dark text (all ≥ 7:1) */
-  --type-law-bg: #e2f1e5; /* Хууль — green */
-  --type-law-ink: #1d4a2a;
-  --type-bill-bg: #fbefd0; /* Хуулийн төсөл — amber */
-  --type-bill-ink: #5a3c06;
-  --type-resolution-bg: #e7e8f8; /* УИХ-ын тогтоол — indigo */
-  --type-resolution-ink: #2b3080;
-  --type-treaty-bg: #dcf0ee; /* Олон улсын гэрээ — teal */
-  --type-treaty-ink: #114d47;
-  --type-govres-bg: #e7eaee; /* Засгийн газрын тогтоол — slate */
-  --type-govres-ink: #2c3541;
-  --type-govnote-bg: #ffffff; /* Засгийн газрын мэдэгдэл — slate, outlined */
-  --type-govnote-ink: #2c3541;
-  --type-govnote-line: #8792a1;
-  --type-regulation-bg: #eee6f8; /* Журам — violet */
-  --type-regulation-ink: #4a2a78;
-  --type-investment-bg: #fce6d6; /* Хөрөнгө оруулалтын төсөл — orange */
-  --type-investment-ink: #733210;
+  /* Document types: one colour dot per type; the label itself stays ink */
+  --type-law: #1f9d55; /* Хууль */
+  --type-bill: #e3a008; /* Хуулийн төсөл */
+  --type-resolution: #4f5bd5; /* УИХ-ын тогтоол */
+  --type-treaty: #0e9f8f; /* Олон улсын гэрээ */
+  --type-govres: #64748b; /* Засгийн газрын тогтоол */
+  --type-govnote: #64748b; /* Засгийн газрын мэдэгдэл, outlined */
+  --type-regulation: #db2777; /* Журам */
+  --type-investment: #ea6a1f; /* Хөрөнгө оруулалтын төсөл */
 }
 
 @theme inline {
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-empty: var(--empty);
+  --color-highlight: var(--highlight);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-2: var(--on-ink-2);
+  --color-on-ink-3: var(--on-ink-3);
+  --color-ink-line: var(--ink-line);
+  --color-ink-raised: var(--ink-raised);
+  --color-ink-border: var(--ink-border);
   --color-placeholder-bg: var(--placeholder-bg);
   --color-placeholder-line: var(--placeholder-line);
   --color-placeholder-ink: var(--placeholder-ink);
@@ -53,41 +71,52 @@
   --color-ins-bg: var(--ins-bg);
   --color-ins-ink: var(--ins-ink);
 
-  --color-type-law-bg: var(--type-law-bg);
-  --color-type-law-ink: var(--type-law-ink);
-  --color-type-bill-bg: var(--type-bill-bg);
-  --color-type-bill-ink: var(--type-bill-ink);
-  --color-type-resolution-bg: var(--type-resolution-bg);
-  --color-type-resolution-ink: var(--type-resolution-ink);
-  --color-type-treaty-bg: var(--type-treaty-bg);
-  --color-type-treaty-ink: var(--type-treaty-ink);
-  --color-type-govres-bg: var(--type-govres-bg);
-  --color-type-govres-ink: var(--type-govres-ink);
-  --color-type-govnote-bg: var(--type-govnote-bg);
-  --color-type-govnote-ink: var(--type-govnote-ink);
-  --color-type-govnote-line: var(--type-govnote-line);
-  --color-type-regulation-bg: var(--type-regulation-bg);
-  --color-type-regulation-ink: var(--type-regulation-ink);
-  --color-type-investment-bg: var(--type-investment-bg);
-  --color-type-investment-ink: var(--type-investment-ink);
+  --color-type-law: var(--type-law);
+  --color-type-bill: var(--type-bill);
+  --color-type-resolution: var(--type-resolution);
+  --color-type-treaty: var(--type-treaty);
+  --color-type-govres: var(--type-govres);
+  --color-type-govnote: var(--type-govnote);
+  --color-type-regulation: var(--type-regulation);
+  --color-type-investment: var(--type-investment);
 
-  --font-sans: 'Noto Sans', system-ui, sans-serif;
-  --font-serif: 'Noto Serif', Georgia, serif;
+  /* Geologica covers Mongolian Ө, Ү and ₮ (bundled via @fontsource-variable) */
+  --font-sans: 'Geologica Variable', 'Geologica', system-ui, sans-serif;
 
-  /* Type scale (mobile first; h1 grows to 36/44 at md) */
-  --text-h1: 28px;
-  --text-h1--line-height: 34px;
-  --text-h1-lg: 36px;
-  --text-h1-lg--line-height: 44px;
-  --text-h2: 21px;
-  --text-h2--line-height: 28px;
+  /* Type scale (mobile first; the -lg sizes are for wide screens) */
+  --text-display: 36px;
+  --text-display--line-height: 42px;
+  --text-display--letter-spacing: -0.035em;
+  --text-display-lg: 80px;
+  --text-display-lg--line-height: 86px;
+  --text-display-lg--letter-spacing: -0.045em;
+  --text-h1: 32px;
+  --text-h1--line-height: 37px;
+  --text-h1--letter-spacing: -0.035em;
+  --text-h1-lg: 46px;
+  --text-h1-lg--line-height: 52px;
+  --text-h1-lg--letter-spacing: -0.035em;
+  --text-h2: 24px;
+  --text-h2--line-height: 30px;
+  --text-h2--letter-spacing: -0.025em;
+  --text-h2-lg: 30px;
+  --text-h2-lg--line-height: 36px;
+  --text-h2-lg--letter-spacing: -0.025em;
+  --text-lede: 18px;
+  --text-lede--line-height: 28px;
   --text-body: 17px;
   --text-body--line-height: 27px;
   --text-small: 14px;
   --text-small--line-height: 20px;
+  --text-meta: 13px;
+  --text-meta--line-height: 18px;
+  --text-overline: 12px;
+  --text-overline--line-height: 16px;
 
-  --radius-card: 12px;
+  --radius-card: 18px;
+  --radius-card-lg: 24px;
   --container-reading: 680px;
+  --container-page: 1264px; /* 1200px of content inside the 32px side padding */
 }
 
 @layer base {
@@ -103,14 +132,21 @@
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
     background-color: var(--paper);
+    -webkit-font-smoothing: antialiased;
   }
 
   h1,
   h2,
   h3 {
-    font-family: var(--font-serif);
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     text-wrap: balance;
+  }
+
+  /* <mark> carries the highlighter utilities below, never the browser's yellow */
+  mark {
+    background-color: transparent;
+    color: inherit;
   }
 
   :focus-visible {
@@ -118,6 +154,43 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  /* On ink surfaces the focus ring switches to the highlighter (violet is only 3:1 there) */
+  .on-ink :focus-visible {
+    outline-color: var(--highlight);
+  }
+}
+
+/* Highlighter behind a key phrase: the first amount in a headline */
+@utility hl-mark {
+  background-color: var(--highlight);
+  color: var(--ink);
+  border-radius: 0.2em;
+  padding: 0 0.18em;
+  margin: 0 -0.05em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Underline highlighter for the first amount inside a plain-language sentence */
+@utility hl-under {
+  background-image: linear-gradient(
+    transparent 58%,
+    var(--highlight) 58%,
+    var(--highlight) 96%,
+    transparent 96%
+  );
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Small caps label above a value: "ДАРААГИЙН ШАТ", "ЭНЭ ӨГҮҮЛБЭР" */
+@utility eyebrow {
+  font-size: var(--text-overline);
+  line-height: var(--text-overline--line-height);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 /* SourceSheet: 180ms slide + fade (bottom sheet on phones, right panel from 768px) */

@@ -1,32 +1,60 @@
 import { useId, useState, type ReactNode } from 'react'
 import { copy } from '../copy'
 import type { DocType, Stage } from '../data/schema'
+import Icon from './Icon'
 
-// §6: soft background + dark text; the government announcement is outlined.
-const TYPE_STYLES: Record<DocType, string> = {
-  Хууль: 'bg-type-law-bg text-type-law-ink',
-  'Хуулийн төсөл': 'bg-type-bill-bg text-type-bill-ink',
-  'УИХ-ын тогтоол': 'bg-type-resolution-bg text-type-resolution-ink',
-  'Олон улсын гэрээ': 'bg-type-treaty-bg text-type-treaty-ink',
-  'Засгийн газрын тогтоол': 'bg-type-govres-bg text-type-govres-ink',
-  Журам: 'bg-type-regulation-bg text-type-regulation-ink',
-  'Хөрөнгө оруулалтын төсөл': 'bg-type-investment-bg text-type-investment-ink',
-  'Засгийн газрын мэдэгдэл':
-    'bg-type-govnote-bg text-type-govnote-ink ring-1 ring-type-govnote-line ring-inset',
+// One colour dot per document type; the label itself always stays ink (or white on ink).
+const TYPE_DOT: Record<DocType, string> = {
+  Хууль: 'bg-type-law',
+  'Хуулийн төсөл': 'bg-type-bill',
+  'УИХ-ын тогтоол': 'bg-type-resolution',
+  'Олон улсын гэрээ': 'bg-type-treaty',
+  'Засгийн газрын тогтоол': 'bg-type-govres',
+  Журам: 'bg-type-regulation',
+  'Хөрөнгө оруулалтын төсөл': 'bg-type-investment',
+  'Засгийн газрын мэдэгдэл': 'border-2 border-type-govnote',
+}
+
+export function TypeDot({ type }: { type: DocType }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`size-2 shrink-0 rounded-[2px] ${TYPE_DOT[type]}`}
+    />
+  )
+}
+
+/** Non-interactive type label: colour dot + name (cards, related stories). */
+export function TypeLabel({
+  type,
+  tone = 'light',
+}: {
+  type: DocType
+  tone?: 'light' | 'dark'
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-[7px] text-meta font-semibold ${
+        tone === 'dark' ? 'text-on-ink' : 'text-ink'
+      }`}
+    >
+      <TypeDot type={type} />
+      {type}
+    </span>
+  )
 }
 
 type BadgeProps = {
   label: string
   hint: string
-  className: string
-  icon?: ReactNode
+  lead: ReactNode
 }
 
 /**
  * A badge with a short hint: tooltip on hover (devices with a mouse), tap or Enter to reveal.
  * The hint is positioned against the enclosing BadgeRow so it never overflows the screen.
  */
-function Badge({ label, hint, className, icon }: BadgeProps) {
+function Badge({ label, hint, lead }: BadgeProps) {
   const [open, setOpen] = useState(false)
   const hintId = useId()
   return (
@@ -39,17 +67,16 @@ function Badge({ label, hint, className, icon }: BadgeProps) {
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
         className="inline-flex min-h-11 cursor-help items-center rounded-full"
       >
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-small font-semibold ${className}`}
-        >
-          {icon}
+        <span className="inline-flex h-9 items-center gap-2 rounded-full border border-line-strong bg-surface pr-2.5 pl-3 text-small font-semibold text-ink transition-colors group-hover/badge:border-ink">
+          {lead}
           {label}
+          <Icon name="info" className="size-4 text-muted" />
         </span>
       </button>
       <span
         id={hintId}
         role="tooltip"
-        className={`absolute top-full left-0 z-20 -mt-1 w-max max-w-full rounded-lg bg-ink px-3 py-2 text-small text-white shadow-md ${
+        className={`absolute top-full left-0 z-20 -mt-1 w-max max-w-full rounded-xl bg-ink px-3 py-2 text-small text-white shadow-lg ${
           open ? 'block' : 'hidden group-hover/badge:block'
         }`}
       >
@@ -64,36 +91,28 @@ export function TypeBadge({ type }: { type: DocType }) {
     <Badge
       label={type}
       hint={copy.types.hints[type]}
-      className={TYPE_STYLES[type]}
+      lead={<TypeDot type={type} />}
     />
   )
 }
 
+/** The highlighter dot with an ink ring is the "current step" mark, as in the stage tracker. */
 export function StageBadge({ stage }: { stage: Stage }) {
   return (
     <Badge
       label={stage}
       hint={copy.stages.hints[stage]}
-      className="bg-surface text-ink ring-1 ring-muted/45 ring-inset"
-      icon={
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-muted" />
+      lead={
+        <span
+          aria-hidden="true"
+          className="size-2.5 shrink-0 rounded-full bg-highlight shadow-[inset_0_0_0_2px_var(--ink)]"
+        />
       }
     />
   )
 }
 
-/** Non-interactive type pill, for places that are already a link (related stories). */
-export function TypeLabel({ type }: { type: DocType }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-small font-semibold ${TYPE_STYLES[type]}`}
-    >
-      {type}
-    </span>
-  )
-}
-
-/** Type + stage badges. Relative + z-10 so the badges stay tappable above a card's stretched link. */
+/** Type + stage badges; relative so the hints can position against the row. */
 export function BadgeRow({ type, stage }: { type: DocType; stage: Stage }) {
   return (
     <div className="relative z-10 flex flex-wrap items-center gap-x-2">
