@@ -127,6 +127,7 @@ export default function Calculator() {
             now={now}
             top={top}
             first={i === 0}
+            empty={salary === null}
           />
         ))}
       </ul>
@@ -158,13 +159,27 @@ function ResultRow({
   now,
   top,
   first,
+  empty,
 }: {
   label: string
   result: PitResult
   now: PitResult | undefined
   top: number
   first: boolean
+  /** The input is empty: show a dash, not "0₮". */
+  empty: boolean
 }) {
+  if (empty)
+    return (
+      <li className="flex items-baseline justify-between gap-3 border-t border-ink-line py-4 last:pb-0">
+        <span className="text-small font-semibold text-on-ink-2">
+          <DataText value={label} />
+        </span>
+        <span className="text-[24px] leading-[30px] font-extrabold text-on-ink-3 md:text-[28px]">
+          —
+        </span>
+      </li>
+    )
   const saving =
     result.status === 'ok' && now?.status === 'ok' ? now.tax - result.tax : 0
   const width =

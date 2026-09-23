@@ -12,11 +12,17 @@ export default function SourcesBlock({ story }: { story: Story }) {
   const ordered = [...story.sources].sort(
     (a, b) => (numbers.get(a.id) ?? 0) - (numbers.get(b.id) ?? 0),
   )
+  const official = story.sources.filter((s) => s.kind === 'official').length
+  const media = story.sources.length - official
   return (
     <>
       <p className="flex items-start gap-2.5 text-[15px] leading-[22px] font-semibold">
         <Icon name="checkCircle" className="size-5 text-accent" />
         {copy.principle}
+      </p>
+      <p className="mt-3 flex flex-wrap gap-2">
+        {official > 0 && <KindBadge kind="official" count={official} />}
+        {media > 0 && <KindBadge kind="media" count={media} />}
       </p>
       <ol className="mt-4 divide-y divide-line rounded-card border border-line bg-surface">
         {ordered.map((s) => (
