@@ -97,6 +97,8 @@ export const copy = {
     unverifiedHelp:
       'Энэ цалингийн хэмжээнд үйлчлэх хувь хэмжээг хуулийн эх бичвэрээс шалгаж байна.',
     rulesUnverified: 'Тооцоо баталгаажаагүй',
+    sourceLabel: 'Эх сурвалж',
+    lawLabel: 'Хууль',
   },
   timeline: {
     here: 'Одоо энд',
@@ -104,6 +106,8 @@ export const copy = {
     today: 'Өнөөдөр',
     inDays: (n: number) => `${n} хоногийн дараа`,
     daysAgo: (n: number) => `${n} хоногийн өмнө`,
+    done: 'Болсон',
+    upcoming: 'Хүлээгдэж буй',
   },
   participate: {
     intro:
@@ -123,38 +127,50 @@ export const copy = {
         name: 'Цуглуулах',
         text: 'd.parliament.mn, legalinfo.mn, shilendans.gov.mn-ээс баримт бичиг цуглуулна.',
         demo: 'Демод: гараар',
+        status: 'manual',
       },
       {
         name: 'Өөрчлөлт илрүүлэх',
         text: 'Өмнөх хувилбартай харьцуулж, өөрчлөгдсөн заалтыг олно.',
         demo: 'Демод: гараар',
+        status: 'manual',
       },
       {
         name: 'AI ноорог',
         text: 'Энгийн хэлээр тайлбарын ноорог бичнэ.',
         demo: 'Демод: урьдчилан бэлтгэсэн',
+        status: 'prepared',
       },
       {
         name: 'Хүний шалгалт',
         text: 'Өгүүлбэр бүрийг эх бичвэртэй тулгана.',
         demo: 'Демод: баг шалгасан',
+        status: 'manual',
       },
       {
         name: 'Нийтлэх',
         text: 'Энэ сайтад мэдээ болгон нийтэлнэ.',
         demo: 'Демод: ажиллаж байна',
+        status: 'built',
       },
       {
         name: 'Мэдэгдэл',
         text: 'Баримт бичгийн шат өөрчлөгдөхөд дагасан хүмүүст мэдэгдэнэ.',
         demo: 'Дараагийн шат',
+        status: 'next',
       },
       {
         name: 'Санал өгөх',
         text: 'Албан ёсны суваг руу чиглүүлнэ.',
         demo: 'Демод: ажиллаж байна',
+        status: 'built',
       },
-    ],
+    ] satisfies {
+      name: string
+      text: string
+      demo: string
+      status: 'manual' | 'prepared' | 'built' | 'next'
+    }[],
     principlesTitle: 'Зарчим',
     principles: [
       'Эх сурвалжгүй өгүүлбэр байхгүй: өгүүлбэр бүр зүйл, заалт эсвэл баримт руу холбогдоно.',
@@ -166,6 +182,7 @@ export const copy = {
       'Энэ нь мэдээлэл бөгөөд хуулийн зөвлөгөө биш.',
     ],
     channelsTitle: 'Албан ёсны сувгууд',
+    openChannel: 'Сувгийг нээх',
     dataTitle: 'Өгөгдлийн эх сурвалж',
     data: [
       'd.parliament.mn — УИХ-д өргөн мэдүүлсэн төслүүд',

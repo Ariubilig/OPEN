@@ -1,18 +1,21 @@
 import { useMemo, type ReactNode } from 'react'
 import { useParams } from 'react-router'
 import AffectsBlock from '../components/AffectsBlock'
+import Calculator from '../components/Calculator'
 import ChangeBlock from '../components/ChangeBlock'
 import DataText from '../components/DataText'
 import EvidenceChain from '../components/EvidenceChain'
 import KeyNumbers from '../components/KeyNumbers'
 import MeaningBlock from '../components/MeaningBlock'
 import NumberExplainer from '../components/NumberExplainer'
+import ParticipateBlock from '../components/ParticipateBlock'
 import Positions from '../components/Positions'
 import RelatedStories, { relatedStories } from '../components/RelatedStories'
 import SectionNav, { type NavItem } from '../components/SectionNav'
 import SourceSheetProvider from '../components/SourceSheet'
 import SourcesBlock from '../components/SourcesBlock'
 import StoryHeader from '../components/StoryHeader'
+import Timeline from '../components/Timeline'
 import { APP_NAME, REPORT_EMAIL } from '../config'
 import { copy } from '../copy'
 import { getStory } from '../data'
@@ -30,7 +33,15 @@ export default function Story() {
 }
 
 type SectionId =
-  'changes' | 'key-numbers' | 'meaning' | 'affects' | 'sources' | 'evidence'
+  | 'changes'
+  | 'key-numbers'
+  | 'meaning'
+  | 'affects'
+  | 'calculator'
+  | 'timeline'
+  | 'sources'
+  | 'evidence'
+  | 'participate'
 
 /** Sections in page order, only those this story has data for. */
 function sectionsOf(story: StoryData): Record<SectionId, boolean> {
@@ -39,9 +50,12 @@ function sectionsOf(story: StoryData): Record<SectionId, boolean> {
     'key-numbers': (story.keyNumbers?.length ?? 0) > 0,
     meaning: story.meaning.length > 0 || (story.positions?.length ?? 0) > 0,
     affects: story.affects.length > 0,
+    calculator: story.calculator === 'pit',
+    timeline: story.timeline.length > 0,
     sources: story.sources.length > 0,
     // featured stories always show the chain; others once they have one item
     evidence: story.featured || story.evidence.some((e) => e.items.length > 0),
+    participate: story.participate.length > 0,
   }
 }
 
@@ -50,8 +64,11 @@ const NAV_LABELS: Record<SectionId, string> = {
   'key-numbers': copy.story.nav.keyNumbers,
   meaning: copy.story.nav.meaning,
   affects: copy.story.nav.affects,
+  calculator: copy.story.nav.calculator,
+  timeline: copy.story.nav.timeline,
   sources: copy.story.nav.sources,
   evidence: copy.story.nav.evidence,
+  participate: copy.story.nav.participate,
 }
 
 function Section({
@@ -137,6 +154,18 @@ function StoryPage({ story }: { story: StoryData }) {
             </Section>
           )}
 
+          {has.calculator && (
+            <Section id="calculator" title={copy.story.sections.calculator}>
+              <Calculator />
+            </Section>
+          )}
+
+          {has.timeline && (
+            <Section id="timeline" title={copy.story.sections.timeline}>
+              <Timeline items={story.timeline} />
+            </Section>
+          )}
+
           {has.sources && (
             <Section id="sources" title={copy.story.sections.sources}>
               <SourcesBlock story={story} />
@@ -149,6 +178,12 @@ function StoryPage({ story }: { story: StoryData }) {
               <div className="md:relative md:left-1/2 md:w-[min(64rem,calc(100vw-2rem))] md:-translate-x-1/2">
                 <EvidenceChain evidence={story.evidence} />
               </div>
+            </Section>
+          )}
+
+          {has.participate && (
+            <Section id="participate" title={copy.story.sections.participate}>
+              <ParticipateBlock refs={story.participate} />
             </Section>
           )}
 
