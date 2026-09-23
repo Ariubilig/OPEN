@@ -14,3 +14,13 @@ export function splitFirstAmount(
   if (!m) return null
   return [text.slice(0, m.index), m[0], text.slice(m.index + m[0].length)]
 }
+
+/**
+ * A key-number value split into its number and unit, so the number can be set big:
+ * '45.7 их наяд төгрөг' → ['45.7', 'их наяд төгрөг'] · '12,080₮' → ['12,080₮', ''] ·
+ * 'Нийслэлийн төсөв' → null (text, not a number).
+ */
+export function splitNumberUnit(value: string): [string, string] | null {
+  const m = /^([−-]?\d[\d,.]*[%₮]?)(?:\s+(\S.*))?$/u.exec(value.trim())
+  return m ? [m[1], m[2] ?? ''] : null
+}
