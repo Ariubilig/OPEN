@@ -26,6 +26,8 @@ export const copy = {
     empty: 'Энэ шүүлтүүрт тохирох мэдээ алга.',
     fullStory: 'Бүрэн тайлбартай',
     sources: (n: number) => `${n} эх сурвалж`,
+    filters: 'Шүүлтүүр',
+    count: (n: number) => `${n} мэдээ`,
   },
   story: {
     back: 'Буцах',
