@@ -1,0 +1,132 @@
+@import 'tailwindcss';
+
+/* Design tokens (§11). Components use the Tailwind names mapped in @theme below. */
+:root {
+  --paper: #f6f4ef;
+  --surface: #ffffff;
+  --ink: #1b1f27;
+  --muted: #5e6673;
+  --line: #e2ddd2;
+  --accent: #1e4d8c;
+  --accent-soft: #e7eef8;
+  --placeholder-bg: #fff6db;
+  --placeholder-line: #c9982b;
+  --placeholder-ink: #6b4e0e;
+  --del-bg: #fbe9e9;
+  --del-ink: #7d1f1f;
+  --ins-bg: #e6f4ea;
+  --ins-ink: #1d5530;
+
+  /* Document-type badges: soft background + dark text (all ≥ 7:1) */
+  --type-law-bg: #e2f1e5; /* Хууль — green */
+  --type-law-ink: #1d4a2a;
+  --type-bill-bg: #fbefd0; /* Хуулийн төсөл — amber */
+  --type-bill-ink: #5a3c06;
+  --type-resolution-bg: #e7e8f8; /* УИХ-ын тогтоол — indigo */
+  --type-resolution-ink: #2b3080;
+  --type-treaty-bg: #dcf0ee; /* Олон улсын гэрээ — teal */
+  --type-treaty-ink: #114d47;
+  --type-govres-bg: #e7eaee; /* Засгийн газрын тогтоол — slate */
+  --type-govres-ink: #2c3541;
+  --type-govnote-bg: #ffffff; /* Засгийн газрын мэдэгдэл — slate, outlined */
+  --type-govnote-ink: #2c3541;
+  --type-govnote-line: #8792a1;
+  --type-regulation-bg: #eee6f8; /* Журам — violet */
+  --type-regulation-ink: #4a2a78;
+  --type-investment-bg: #fce6d6; /* Хөрөнгө оруулалтын төсөл — orange */
+  --type-investment-ink: #733210;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-placeholder-bg: var(--placeholder-bg);
+  --color-placeholder-line: var(--placeholder-line);
+  --color-placeholder-ink: var(--placeholder-ink);
+  --color-del-bg: var(--del-bg);
+  --color-del-ink: var(--del-ink);
+  --color-ins-bg: var(--ins-bg);
+  --color-ins-ink: var(--ins-ink);
+
+  --color-type-law-bg: var(--type-law-bg);
+  --color-type-law-ink: var(--type-law-ink);
+  --color-type-bill-bg: var(--type-bill-bg);
+  --color-type-bill-ink: var(--type-bill-ink);
+  --color-type-resolution-bg: var(--type-resolution-bg);
+  --color-type-resolution-ink: var(--type-resolution-ink);
+  --color-type-treaty-bg: var(--type-treaty-bg);
+  --color-type-treaty-ink: var(--type-treaty-ink);
+  --color-type-govres-bg: var(--type-govres-bg);
+  --color-type-govres-ink: var(--type-govres-ink);
+  --color-type-govnote-bg: var(--type-govnote-bg);
+  --color-type-govnote-ink: var(--type-govnote-ink);
+  --color-type-govnote-line: var(--type-govnote-line);
+  --color-type-regulation-bg: var(--type-regulation-bg);
+  --color-type-regulation-ink: var(--type-regulation-ink);
+  --color-type-investment-bg: var(--type-investment-bg);
+  --color-type-investment-ink: var(--type-investment-ink);
+
+  --font-sans: 'Noto Sans', system-ui, sans-serif;
+  --font-serif: 'Noto Serif', Georgia, serif;
+
+  /* Type scale (mobile first; h1 grows to 36/44 at md) */
+  --text-h1: 28px;
+  --text-h1--line-height: 34px;
+  --text-h1-lg: 36px;
+  --text-h1-lg--line-height: 44px;
+  --text-h2: 21px;
+  --text-h2--line-height: 28px;
+  --text-body: 17px;
+  --text-body--line-height: 27px;
+  --text-small: 14px;
+  --text-small--line-height: 20px;
+
+  --radius-card: 12px;
+  --container-reading: 680px;
+}
+
+@layer base {
+  html {
+    background-color: var(--paper);
+    color: var(--ink);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    background-color: var(--paper);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

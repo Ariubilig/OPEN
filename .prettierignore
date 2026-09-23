@@ -1,0 +1,5 @@
+# Story JSON is edited by hand in parallel — never reflow it
+src/data/
+
+dist
+package-lock.json
