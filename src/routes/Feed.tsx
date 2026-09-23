@@ -136,7 +136,8 @@ export default function Feed() {
                 aria-live="polite"
                 className="text-small text-muted tabular-nums"
               >
-                {copy.feed.count(list.length)}
+                {/* unfiltered, the featured stories sit above the list: count them too */}
+                {copy.feed.count(filtered ? list.length : stories.length)}
               </span>
             </div>
             <TypeSelect
