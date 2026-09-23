@@ -1,0 +1,28 @@
+{
+  "id": "emeelt-power-plant",
+  "type": "Хөрөнгө оруулалтын төсөл",
+  "stage": "Хэрэгжиж байна",
+  "topics": ["Эрчим хүч", "Хот ба дэд бүтэц"],
+  "featured": false,
+  "order": 6,
+  "title": "Эмээлт аж үйлдвэрийн паркийн дулааны цахилгаан станц, цэвэрлэх байгууламжийн шавыг тавилаа",
+  "officialTitle": { "text": "TODO_VERIFY", "source": "TODO_VERIFY", "verify": "Төслийн албан нэр, хэрэгжүүлэгч байгууллагыг олох" },
+  "summary": { "text": "Төсөвт өртөг нь 224 тэрбум төгрөгөөс дээш дулааны цахилгаан станц болон цэвэрлэх байгууламжийн шавыг тавьжээ.", "source": "ikon-emeelt" },
+  "publishedAt": "2026-09-25",
+  "timeline": [
+    { "date": "2026-09-22", "label": "Шав тавьсан", "status": "current", "source": "ikon-emeelt", "verify": "Шав тавьсан яг огноог эх мэдээнээс шалгах" }
+  ],
+  "keyNumbers": [
+    { "label": "Төсөвт өртөг", "value": "224 тэрбум төгрөгөөс дээш", "source": "ikon-emeelt" },
+    { "label": "Санхүүжилтийн эх үүсвэр", "value": "TODO_VERIFY", "source": "TODO_VERIFY", "verify": "Улсын төсөв, зээл, концессын аль нь болохыг shilendans.gov.mn эсвэл төсвийн хуулиас шалгах" }
+  ],
+  "meaning": [],
+  "affects": [],
+  "evidence": [],
+  "participate": [
+    { "channel": "e-mongolia", "label": "УИХ-д санал, хүсэлт илгээх" }
+  ],
+  "sources": [
+    { "id": "ikon-emeelt", "title": "Эмээлт аж үйлдвэрийн паркийн ₮224 гаруй тэрбумын төсөвт өртөгтэй ДЦС болон цэвэрлэх байгууламжийн шавыг тавив", "publisher": "ikon.mn", "url": "https://ikon.mn/n/3qh8", "publishedAt": "2026-09-22", "accessedAt": "2026-09-22", "kind": "media", "note": "Зөвхөн гарчгийг шалгасан; бүтэн мэдээг нээж баталгаажуулах" }
+  ]
+}

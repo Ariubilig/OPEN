@@ -1,0 +1,30 @@
+{
+  "id": "uih-resolution",
+  "draft": true,
+  "type": "УИХ-ын тогтоол",
+  "stage": "Батлагдсан",
+  "topics": ["Засаглал"],
+  "featured": false,
+  "order": 7,
+  "title": "TODO_VERIFY",
+  "officialTitle": { "text": "TODO_VERIFY", "source": "src-1" },
+  "summary": { "text": "TODO_VERIFY", "source": "src-1" },
+  "publishedAt": "2026-09-25",
+  "timeline": [
+    { "date": "TODO_VERIFY", "label": "УИХ баталсан", "status": "current", "source": "src-1" }
+  ],
+  "meaning": [
+    { "text": "TODO_VERIFY", "source": "src-1" }
+  ],
+  "affects": [],
+  "evidence": [],
+  "participate": [
+    { "channel": "e-mongolia", "label": "УИХ-д санал, хүсэлт илгээх" }
+  ],
+  "sources": [
+    { "id": "src-1", "title": "TODO_VERIFY", "publisher": "TODO_VERIFY", "url": "TODO_VERIFY", "accessedAt": "TODO_VERIFY", "kind": "official" }
+  ],
+  "verify": [
+    "Сүүлийн саруудад батлагдсан, иргэдэд шууд хамаатай нэг УИХ-ын тогтоолыг legalinfo.mn/mn/law/28 эсвэл parliament.mn-ээс сонгож бөглөөд, файлыг шинэ нэрээр хадгалж draft-ийг false болгох"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "alcohol-service-regulation",
+  "type": "Журам",
+  "stage": "Санал авч дууссан",
+  "topics": ["Эрүүл мэнд"],
+  "featured": false,
+  "order": 5,
+  "title": "Согтууруулах ундааны хариуцлагатай үйлчилгээний журмын төсөл: 8,151 удаа үзсэн, 0 санал",
+  "officialTitle": { "text": "Журам болон жишиг төлбөрийн хэмжээг шинэчлэн батлах тухай (Согтууруулах ундааны хариуцлагатай үйлчилгээний журам, сургалтын жишиг төлбөрийн хэмжээ)", "source": "legalinfo-alcohol" },
+  "summary": { "text": "Журмын төслийг legalinfo.mn дээр 2024 оны 12-р сарын 10-нд санал авахаар нийтэлсэн бөгөөд 8,151 удаа үзсэн ч нэг ч санал ирээгүй.", "source": "legalinfo-alcohol", "verify": "Тоонууд 2026.09.22-ны байдлаар. Демогийн өмнө legalinfo.mn-ээс дахин шалгах" },
+  "publishedAt": "2026-09-25",
+  "timeline": [
+    { "date": "2024-12-10", "label": "legalinfo.mn дээр санал авахаар нийтэлсэн", "status": "done", "source": "legalinfo-alcohol" },
+    { "date": null, "dateText": "2026.09.22-ны байдлаар", "label": "Санал авч дууссан", "status": "current", "source": "legalinfo-alcohol" }
+  ],
+  "meaning": [
+    { "text": "Согтууруулах ундаагаар хариуцлагатай үйлчлэх журам болон уг үйлчилгээний сургалтын жишиг төлбөрийг шинэчлэхээр төсөл боловсруулжээ.", "source": "legalinfo-alcohol" }
+  ],
+  "affects": [
+    { "group": "Бизнес эрхлэгч", "text": "Согтууруулах ундаагаар үйлчилдэг газар, түүний ажилтнуудад хамаарна.", "source": "legalinfo-alcohol", "verify": "Журмын эх бичвэрээс хамрах хүрээг шалгах" }
+  ],
+  "evidence": [
+    { "step": "Олон нийтийн санал", "items": [{ "text": "legalinfo.mn дээр 8,151 удаа үзсэн, 0 санал ирсэн.", "source": "legalinfo-alcohol" }] }
+  ],
+  "participate": [
+    { "channel": "legalinfo-regulations", "label": "Санал авч буй журмын төслүүдэд санал өгөх" }
+  ],
+  "sources": [
+    { "id": "legalinfo-alcohol", "title": "Журам болон жишиг төлбөрийн хэмжээг шинэчлэн батлах тухай", "publisher": "legalinfo.mn — ЗХХА-ын төсөлд санал өгөх", "url": "https://legalinfo.mn/mn/discussiondetail/17333259074871?type=LIS_SAID&page=1", "publishedAt": "2024-12-10", "accessedAt": "2026-09-22", "kind": "official" }
+  ],
+  "verify": [
+    "Демогийн өмнө үзсэн (8,151), санал (0) тоог legalinfo.mn-ээс дахин шалгаж title, summary, evidence-д шинэчлэх",
+    "legalinfo.mn дээр \"Идэвхтэй\" төлөвтэй, залуучуудад илүү хамаатай журмын төсөл байвал энэ картыг түүгээр солих"
+  ]
+}

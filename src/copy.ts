@@ -1,4 +1,6 @@
-import { APP_NAME } from './config.ts' // explicit extension: also loaded by vite.config.ts
+// explicit extensions: this file is also loaded by vite.config.ts
+import { APP_NAME } from './config.ts'
+import type { DocType, Stage } from './data/schema.ts'
 
 export const copy = {
   tagline: 'Мэдээлэл нээлттэй. Одоо ойлгомжтой.',
@@ -179,7 +181,7 @@ export const copy = {
         'Төсөв, зээл зэргээр санхүүжих барилга, дэд бүтцийн төсөл.',
       'Засгийн газрын мэдэгдэл':
         'Засгийн газрын олон нийтэд танилцуулсан шийдвэр.',
-    },
+    } satisfies Record<DocType, string>,
   },
   stages: {
     hints: {
@@ -200,6 +202,6 @@ export const copy = {
       Цуцалсан: 'Төслийг цуцалсан.',
       Танилцуулсан: 'Олон нийтэд танилцуулсан.',
       'Хэрэгжиж байна': 'Ажил эхэлсэн.',
-    },
+    } satisfies Record<Stage, string>,
   },
 }
