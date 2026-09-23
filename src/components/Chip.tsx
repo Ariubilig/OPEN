@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 /**
  * A single-select chip (feed topics, story group filter, calculator presets).
  * Selected = ink (or the highlighter on dark surfaces), never the highlighter alone on paper.
+ * tone "soft" sits on a white card (paper chips instead of white ones).
  */
 export default function Chip({
   selected,
@@ -13,7 +14,7 @@ export default function Chip({
   selected: boolean
   onClick: () => void
   children: ReactNode
-  tone?: 'light' | 'dark'
+  tone?: 'light' | 'dark' | 'soft'
 }) {
   const colors =
     tone === 'dark'
@@ -22,7 +23,9 @@ export default function Chip({
         : 'border-ink-border bg-transparent text-on-ink hover:border-on-ink-3'
       : selected
         ? 'border-ink bg-ink text-white'
-        : 'border-line-strong bg-surface text-ink hover:border-ink'
+        : tone === 'soft'
+          ? 'border-paper bg-paper text-ink hover:border-ink'
+          : 'border-line-strong bg-surface text-ink hover:border-ink'
   return (
     <button
       type="button"

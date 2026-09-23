@@ -27,7 +27,7 @@ function ForYouCard({
   group: Group
 }) {
   return (
-    <article className="flex h-full flex-col gap-3 rounded-card border border-line bg-surface p-4 lg:p-6">
+    <article className="flex h-full flex-col gap-3 rounded-card bg-paper p-4 lg:p-6">
       <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <TypeLabel type={story.type} />
         <span aria-hidden="true" className="text-muted">
@@ -85,33 +85,41 @@ export default function ForYou({
   if (counts.length === 0) return null
   const results = group ? storiesFor(stories, group) : []
   return (
-    <section aria-labelledby="for-you-title" className="mt-10 lg:mt-[72px]">
-      <h2
-        id="for-you-title"
-        className="text-[22px] leading-7 lg:text-[28px] lg:leading-[34px]"
-      >
-        {copy.forYou.title}
-      </h2>
-      <p className="mt-1.5 text-ink-2">{copy.forYou.hint}</p>
-      <div
-        role="group"
-        aria-label={copy.forYou.title}
-        className="-mx-4 mt-3.5 flex gap-2 overflow-x-auto px-4 py-0.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 lg:mt-[18px] [&::-webkit-scrollbar]:hidden"
-      >
-        {counts.map(({ group: g, count }) => (
-          <Chip
-            key={g}
-            selected={group === g}
-            onClick={() => onSelect(group === g ? null : g)}
+    <section
+      aria-labelledby="for-you-title"
+      className="mt-10 rounded-card-lg border border-line bg-surface p-5 lg:mt-[72px] lg:p-8"
+    >
+      <div className="lg:grid lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:items-start lg:gap-12">
+        <div>
+          <h2
+            id="for-you-title"
+            className="text-[22px] leading-7 lg:text-[28px] lg:leading-[34px]"
           >
-            {g}
-            <span
-              className={`ml-1.5 tabular-nums ${group === g ? 'text-highlight' : 'text-muted'}`}
+            {copy.forYou.title}
+          </h2>
+          <p className="mt-1.5 text-ink-2">{copy.forYou.hint}</p>
+        </div>
+        <div
+          role="group"
+          aria-label={copy.forYou.title}
+          className="-mx-5 mt-3.5 flex gap-2 overflow-x-auto px-5 py-0.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 lg:mt-1 [&::-webkit-scrollbar]:hidden"
+        >
+          {counts.map(({ group: g, count }) => (
+            <Chip
+              key={g}
+              tone="soft"
+              selected={group === g}
+              onClick={() => onSelect(group === g ? null : g)}
             >
-              {count}
-            </span>
-          </Chip>
-        ))}
+              {g}
+              <span
+                className={`ml-1.5 tabular-nums ${group === g ? 'text-highlight' : 'text-muted'}`}
+              >
+                {count}
+              </span>
+            </Chip>
+          ))}
+        </div>
       </div>
 
       <p aria-live="polite" className="sr-only">
