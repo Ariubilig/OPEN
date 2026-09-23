@@ -66,6 +66,12 @@ export const copy = {
     showLaw: 'Хуулийн эх бичвэрийг харах',
     hideLaw: 'Эх бичвэрийг хураах',
     lawText: 'Хуулийн эх бичвэр',
+    lawView: {
+      label: 'Эх бичвэрийг харах хэлбэр',
+      diff: 'Ялгаа',
+      before: 'Өмнөх',
+      after: 'Шинэ',
+    },
     newClause: 'Шинээр нэмсэн заалт',
     removed: 'Хасагдсан',
     added: 'Нэмэгдсэн',

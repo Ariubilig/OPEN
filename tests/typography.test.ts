@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { glueSegments, leadingSuffix } from '../src/lib/typography'
+import {
+  glueSegments,
+  keepNumbersTogether,
+  leadingSuffix,
+} from '../src/lib/typography'
 
 const glued = (text: string) =>
   glueSegments(text)
@@ -55,5 +59,18 @@ describe('leadingSuffix', () => {
     expect(leadingSuffix('-ийн зээлээр')).toBe('-ийн')
     expect(leadingSuffix(' хүртэлх цалин')).toBe('')
     expect(leadingSuffix('')).toBe('')
+  })
+})
+
+const NBSP = String.fromCharCode(0xa0)
+
+describe('keepNumbersTogether', () => {
+  it('joins digit groups written with spaces, nothing else', () => {
+    expect(
+      keepNumbersTogether('0-9 504 000 хүртэлх төгрөгийн, 14, 18 дугаар зүйл'),
+    ).toBe(`0-9${NBSP}504${NBSP}000 хүртэлх төгрөгийн, 14, 18 дугаар зүйл`)
+    expect(keepNumbersTogether('120 000 001-180 000 000')).toBe(
+      `120${NBSP}000${NBSP}001-180${NBSP}000${NBSP}000`,
+    )
   })
 })

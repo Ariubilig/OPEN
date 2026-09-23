@@ -20,3 +20,13 @@ export function glueSegments(text: string): Segment[] {
 export function leadingSuffix(text: string): string {
   return /^[-–]\S*/u.exec(text)?.[0] ?? ''
 }
+
+const NBSP = String.fromCharCode(0xa0)
+
+/**
+ * Law texts group digits with spaces ("9 504 000", "120 000 000"). For display, those spaces
+ * become no-break spaces so a number is never split across two lines. Nothing else changes.
+ */
+export function keepNumbersTogether(text: string): string {
+  return text.replace(/(\d) (?=\d{3}(?!\d))/g, `$1${NBSP}`)
+}
