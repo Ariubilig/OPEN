@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router'
 import FeedCard, { FeatureCard, LeadCard } from '../components/FeedCard'
 import { TopicChips, TypeSelect } from '../components/FilterBar'
 import Icon from '../components/Icon'
+import SentenceLines from '../components/SentenceLines'
 import { copy } from '../copy'
 import { stories } from '../data'
 import { DOC_TYPES, TOPICS, type DocType, type Topic } from '../data/schema'
@@ -20,28 +21,6 @@ function pick<T extends string>(
   options: readonly T[],
 ): T | null {
   return options.find((o) => o === value) ?? null
-}
-
-/** The tagline, one sentence per line, with its last word on the highlighter. */
-function Tagline({ text }: { text: string }) {
-  const sentences = text.split(/(?<=[.!?])\s+/)
-  const last = sentences.pop() ?? ''
-  const cut = last.lastIndexOf(' ') + 1
-  return (
-    <>
-      {sentences.map((s) => (
-        <span key={s} className="block">
-          {s}
-        </span>
-      ))}
-      <span className="block">
-        {last.slice(0, cut)}
-        <span className="inline-block -rotate-[1.5deg] rounded-lg bg-highlight px-2 pb-0.5 text-ink">
-          {last.slice(cut)}
-        </span>
-      </span>
-    </>
-  )
 }
 
 export default function Feed() {
@@ -87,7 +66,7 @@ export default function Feed() {
     <div className="mx-auto max-w-page px-4 pt-8 md:px-8 md:pt-[72px]">
       <section aria-labelledby="hero-title">
         <h1 id="hero-title" className="text-display lg:text-display-lg">
-          <Tagline text={copy.tagline} />
+          <SentenceLines text={copy.tagline} />
         </h1>
         <div className="mt-3.5 flex flex-col gap-4 md:mt-7 md:flex-row md:items-end md:justify-between md:gap-12">
           <p className="max-w-[600px] text-ink-2 md:text-[21px] md:leading-[31px]">

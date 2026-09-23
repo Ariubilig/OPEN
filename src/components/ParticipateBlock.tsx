@@ -79,7 +79,7 @@ export function ChannelCard({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className={`mt-1 flex min-h-[52px] items-center justify-center rounded-full py-2 text-center text-[15px] leading-5 font-bold transition-colors ${
+          className={`mt-auto flex min-h-[52px] items-center justify-center rounded-full py-2 text-center text-[15px] leading-5 font-bold transition-colors ${
             dark
               ? 'bg-highlight px-[18px] text-ink hover:bg-white'
               : 'bg-ink px-6 text-white hover:bg-accent-strong sm:self-start'
