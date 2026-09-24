@@ -50,6 +50,8 @@ function appMeta(): Plugin {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), appMeta()],
+  // One bundle on purpose: the site works offline once loaded (stories, zod and React together).
+  build: { chunkSizeWarningLimit: 700 },
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',

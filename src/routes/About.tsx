@@ -7,14 +7,14 @@ import { copy } from '../copy'
 import { channels } from '../data'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
-type StepStatus = (typeof copy.about.steps)[number]['status']
+type Actor = (typeof copy.about.steps)[number]['actor']
 
-// How far each pipeline step is built in the demo — shown honestly next to the step.
-const STATUS_STYLES: Record<StepStatus, string> = {
-  built: 'bg-ins-bg text-ins-ink',
-  prepared: 'bg-accent-soft text-accent-strong',
-  manual: 'bg-paper text-ink shadow-[inset_0_0_0_1px_var(--line-strong)]',
-  next: 'border border-dashed border-muted text-muted',
+// Who does each step of the pipeline, as a small label next to the step.
+const ACTOR_STYLES: Record<Actor, string> = {
+  system: 'bg-paper text-ink shadow-[inset_0_0_0_1px_var(--line-strong)]',
+  ai: 'bg-accent-soft text-accent-strong',
+  editor: 'bg-ins-bg text-ins-ink',
+  citizen: 'bg-highlight text-ink',
 }
 
 function Block({
@@ -95,11 +95,7 @@ export default function About() {
               )}
               <span
                 aria-hidden="true"
-                className={`relative flex size-8 items-center justify-center rounded-full text-meta font-extrabold tabular-nums ${
-                  step.status === 'next'
-                    ? 'border-2 border-dashed border-on-ink-3 bg-surface text-muted'
-                    : 'bg-ink text-highlight'
-                }`}
+                className="relative flex size-8 items-center justify-center rounded-full bg-ink text-meta font-extrabold text-highlight tabular-nums"
               >
                 {i + 1}
               </span>
@@ -112,9 +108,9 @@ export default function About() {
                 </p>
               </div>
               <p
-                className={`col-start-2 mt-2.5 inline-flex h-7 items-center self-start justify-self-start rounded-full px-3 text-meta font-bold whitespace-nowrap md:col-start-3 md:row-start-1 md:mt-0.5 ${STATUS_STYLES[step.status]}`}
+                className={`col-start-2 mt-2.5 inline-flex h-7 items-center self-start justify-self-start rounded-full px-3 text-meta font-bold whitespace-nowrap md:col-start-3 md:row-start-1 md:mt-0.5 ${ACTOR_STYLES[step.actor]}`}
               >
-                {step.demo}
+                {copy.about.actors[step.actor]}
               </p>
             </li>
           ))}
@@ -160,11 +156,7 @@ export default function About() {
           ))}
         </ul>
       </Block>
-
-      <p className="mt-12 flex items-start gap-2.5 rounded-card border border-line bg-surface p-4 text-[15px] leading-[22px] font-semibold lg:mt-20">
-        <Icon name="info" className="size-5" />
-        {copy.footer.prototype}
-      </p>
+      {/* who we are (independent, not an official site) is in the footer below */}
     </div>
   )
 }
