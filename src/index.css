@@ -184,13 +184,13 @@
   box-decoration-break: clone;
 }
 
-/* Small caps label above a value: "ДАРААГИЙН ШАТ", "ЭНЭ ӨГҮҮЛБЭР" */
+/* Small label above a value: "Дараагийн шат", "Энэ өгүүлбэр". Sentence case: ALL CAPS Cyrillic
+   is hard to read (brief §11). */
 @utility eyebrow {
-  font-size: var(--text-overline);
-  line-height: var(--text-overline--line-height);
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 /* SourceSheet: 180ms slide + fade (bottom sheet on phones, right panel from 768px) */

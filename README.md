@@ -19,7 +19,7 @@ Project rules for anyone (or any AI) editing the code: [CLAUDE.md](CLAUDE.md).
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # typecheck + production build into dist/
+npm run build      # data check + typecheck + production build into dist/
 npm run preview    # serve dist/ at http://localhost:4173
 ```
 
@@ -51,6 +51,8 @@ One story per file. Keep the JSON readable and don't reformat files you are not 
   note with its file and JSON path. It fails only on real errors.
 - **`npm run check:strict`** additionally fails while any `TODO_VERIFY` is left in a published
   story or `taxRules.verified` is `false`. Use it before the demo.
+- **`npm run build`** runs `npm run check` first (`prebuild`): a story file that breaks the schema
+  fails the build (and a Vercel/Netlify deploy) instead of shipping a blank page.
 
 ## Change the name
 

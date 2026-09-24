@@ -3,9 +3,13 @@ import { copy } from '../copy'
 import { TODO, type Change } from '../data/schema'
 import { lawDiff } from '../lib/diff'
 import { formatDate } from '../lib/format'
+import { keepNumbersTogether } from '../lib/typography'
 import CitedText, { MarkedText } from './CitedText'
 import DataText from './DataText'
 import Icon from './Icon'
+
+type LawView = 'diff' | 'before' | 'after'
+const LAW_VIEWS: LawView[] = ['diff', 'before', 'after']
 
 function LawDiff({ before, after }: { before: string; after: string }) {
   return (
@@ -21,22 +25,17 @@ function LawDiff({ before, after }: { before: string; after: string }) {
           {copy.story.added}
         </span>
       </p>
-      {before === '' && (
-        <p className="mt-2 text-small font-semibold text-ins-ink">
-          {copy.story.newClause}
-        </p>
-      )}
       <p className="mt-2 whitespace-pre-line">
         {lawDiff(before, after).map((part, i) =>
           part.kind === 'same' ? (
-            <span key={i}>{part.text}</span>
+            <span key={i}>{keepNumbersTogether(part.text)}</span>
           ) : part.kind === 'removed' ? (
             <del
               key={i}
               className="rounded-sm bg-del-bg text-del-ink decoration-del-ink/70"
             >
               <span className="sr-only">[{copy.story.removed}: </span>
-              {part.text}
+              {keepNumbersTogether(part.text)}
               <span className="sr-only">]</span>
             </del>
           ) : (
@@ -45,7 +44,7 @@ function LawDiff({ before, after }: { before: string; after: string }) {
               className="rounded-sm bg-ins-bg text-ins-ink no-underline"
             >
               <span className="sr-only">[{copy.story.added}: </span>
-              {part.text}
+              {keepNumbersTogether(part.text)}
               <span className="sr-only">]</span>
             </ins>
           ),
@@ -79,10 +78,62 @@ function LawPending({ before, after }: { before: string; after: string }) {
   )
 }
 
+/**
+ * Both law texts exist: the word diff by default, or either text on its own to read it clean
+ * (long clauses with many changed numbers are hard to read as a diff).
+ */
+function LawCompare({ before, after }: { before: string; after: string }) {
+  const [view, setView] = useState<LawView>('diff')
+  return (
+    <div className="flex flex-col gap-3">
+      <div
+        role="group"
+        aria-label={copy.story.lawView.label}
+        className="inline-flex self-start rounded-full bg-paper p-1"
+      >
+        {LAW_VIEWS.map((v) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={view === v}
+            onClick={() => setView(v)}
+            className={`inline-flex min-h-11 items-center rounded-full px-4 text-small font-semibold transition-colors ${
+              view === v ? 'bg-ink text-white' : 'text-ink-2 hover:text-ink'
+            }`}
+          >
+            {copy.story.lawView[v]}
+          </button>
+        ))}
+      </div>
+      {view === 'diff' ? (
+        <div>
+          <LawDiff before={before} after={after} />
+        </div>
+      ) : (
+        <p className="whitespace-pre-line">
+          {keepNumbersTogether(view === 'before' ? before : after)}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** A clause that did not exist before: its new text, clean. */
+function LawNew({ after }: { after: string }) {
+  return (
+    <>
+      <p className="inline-flex rounded-md bg-ins-bg px-2 py-0.5 text-small font-semibold text-ins-ink">
+        {copy.story.newClause}
+      </p>
+      <p className="mt-2 whitespace-pre-line">{keepNumbersTogether(after)}</p>
+    </>
+  )
+}
+
 function BeforeAfterTag({ after }: { after: boolean }) {
   return (
     <span
-      className={`inline-flex h-[22px] items-center self-start rounded-md px-2 text-overline font-extrabold tracking-[0.06em] uppercase ${
+      className={`inline-flex h-6 items-center self-start rounded-md px-2 text-meta font-bold ${
         after
           ? 'bg-highlight text-ink'
           : 'bg-paper text-muted shadow-[inset_0_0_0_1px_var(--line-strong)]'
@@ -153,9 +204,9 @@ export default function ChangeBlock({ change }: { change: Change }) {
       <div
         id={panelId}
         hidden={!open}
-        className="mb-2 rounded-xl border border-line p-3 text-[16px] leading-[26px]"
+        className="mb-2 rounded-xl border border-line p-3 text-[16px] leading-[26px] md:p-4"
       >
-        <p className="mb-2 text-small font-semibold text-muted">
+        <p className="mb-3 text-small font-semibold text-muted">
           <MarkedText
             text={copy.story.lawText}
             source={change.lawSource}
@@ -164,8 +215,10 @@ export default function ChangeBlock({ change }: { change: Change }) {
         </p>
         {lawPending ? (
           <LawPending before={change.lawBefore} after={change.lawAfter} />
+        ) : change.lawBefore === '' ? (
+          <LawNew after={change.lawAfter} />
         ) : (
-          <LawDiff before={change.lawBefore} after={change.lawAfter} />
+          <LawCompare before={change.lawBefore} after={change.lawAfter} />
         )}
       </div>
     </article>

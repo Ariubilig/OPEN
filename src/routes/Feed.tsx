@@ -2,10 +2,19 @@ import { useLayoutEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import FeedCard, { FeatureCard, LeadCard } from '../components/FeedCard'
 import { TopicChips, TypeSelect } from '../components/FilterBar'
+import ForYou from '../components/ForYou'
 import Icon from '../components/Icon'
+import SentenceLines from '../components/SentenceLines'
 import { copy } from '../copy'
 import { stories } from '../data'
-import { DOC_TYPES, TOPICS, type DocType, type Topic } from '../data/schema'
+import {
+  DOC_TYPES,
+  TOPICS,
+  type DocType,
+  type Group,
+  type Topic,
+} from '../data/schema'
+import { parseGroup } from '../lib/groups'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 // Filter options: only the types and topics present in the data, in schema order.
@@ -22,33 +31,12 @@ function pick<T extends string>(
   return options.find((o) => o === value) ?? null
 }
 
-/** The tagline, one sentence per line, with its last word on the highlighter. */
-function Tagline({ text }: { text: string }) {
-  const sentences = text.split(/(?<=[.!?])\s+/)
-  const last = sentences.pop() ?? ''
-  const cut = last.lastIndexOf(' ') + 1
-  return (
-    <>
-      {sentences.map((s) => (
-        <span key={s} className="block">
-          {s}
-        </span>
-      ))}
-      <span className="block">
-        {last.slice(0, cut)}
-        <span className="inline-block -rotate-[1.5deg] rounded-lg bg-highlight px-2 pb-0.5 text-ink">
-          {last.slice(cut)}
-        </span>
-      </span>
-    </>
-  )
-}
-
 export default function Feed() {
   useDocumentTitle()
   const [params, setParams] = useSearchParams()
   const type = pick<DocType>(params.get('type'), typeOptions)
   const topic = pick<Topic>(params.get('topic'), topicOptions)
+  const group = parseGroup(params.get('group'))
   const filtered = type !== null || topic !== null
 
   const list = filtered
@@ -72,22 +60,33 @@ export default function Feed() {
     anchorTop.current = null
   }, [search])
 
-  // Every change is a new history entry, so the browser's back button restores the previous filter.
-  function setFilter(next: { type: DocType | null; topic: Topic | null }) {
-    if (next.type === type && next.topic === topic) return
-    anchorTop.current = barRef.current?.getBoundingClientRect().top ?? null
+  // Every change is a new history entry, so the browser's back button restores the previous one.
+  function update(next: {
+    type: DocType | null
+    topic: Topic | null
+    group: Group | null
+  }) {
     const p = new URLSearchParams()
     if (next.type) p.set('type', next.type)
     if (next.topic) p.set('topic', next.topic)
+    if (next.group) p.set('group', next.group)
     setParams(p)
   }
+  function setFilter(next: { type: DocType | null; topic: Topic | null }) {
+    if (next.type === type && next.topic === topic) return
+    anchorTop.current = barRef.current?.getBoundingClientRect().top ?? null
+    update({ ...next, group })
+  }
   const clear = () => setFilter({ type: null, topic: null })
+  // "Танд юу хамаатай вэ?" sits above the list and grows downwards: nothing to anchor.
+  const setGroup = (next: Group | null) =>
+    next !== group && update({ type, topic, group: next })
 
   return (
     <div className="mx-auto max-w-page px-4 pt-8 md:px-8 md:pt-[72px]">
       <section aria-labelledby="hero-title">
         <h1 id="hero-title" className="text-display lg:text-display-lg">
-          <Tagline text={copy.tagline} />
+          <SentenceLines text={copy.tagline} />
         </h1>
         <div className="mt-3.5 flex flex-col gap-4 md:mt-7 md:flex-row md:items-end md:justify-between md:gap-12">
           <p className="max-w-[600px] text-ink-2 md:text-[21px] md:leading-[31px]">
@@ -121,6 +120,8 @@ export default function Feed() {
         </section>
       )}
 
+      {!filtered && <ForYou group={group} onSelect={setGroup} />}
+
       <section aria-labelledby="all-title" className="mt-10 lg:mt-[72px]">
         <div ref={barRef} className="flex flex-col gap-3.5 lg:gap-[18px]">
           <div className="flex items-center justify-between gap-3">
@@ -135,7 +136,8 @@ export default function Feed() {
                 aria-live="polite"
                 className="text-small text-muted tabular-nums"
               >
-                {copy.feed.count(list.length)}
+                {/* unfiltered, the featured stories sit above the list: count them too */}
+                {copy.feed.count(filtered ? list.length : stories.length)}
               </span>
             </div>
             <TypeSelect

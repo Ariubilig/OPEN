@@ -1,13 +1,22 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { copy } from '../copy'
 import { GROUPS, type Affect, type Group } from '../data/schema'
+import { parseGroup } from '../lib/groups'
 import Chip from './Chip'
 import CitedText from './CitedText'
 
-/** Group filter chips (Бүгд + groups present), then the items grouped under each group. */
+/**
+ * Group filter chips (Бүгд + groups present), then the items grouped under each group.
+ * Arriving from "Танд юу хамаатай вэ?" (`?group=Оюутан`) preselects that group.
+ */
 export default function AffectsBlock({ items }: { items: Affect[] }) {
   const groups = GROUPS.filter((g) => items.some((a) => a.group === g))
-  const [group, setGroup] = useState<Group | null>(null)
+  const [params] = useSearchParams()
+  const [group, setGroup] = useState<Group | null>(() => {
+    const fromUrl = parseGroup(params.get('group'))
+    return fromUrl && groups.includes(fromUrl) ? fromUrl : null
+  })
   const shown = group ? items.filter((a) => a.group === group) : items
   // groups in the order they first appear in the data
   const order = [...new Set(shown.map((a) => a.group))]

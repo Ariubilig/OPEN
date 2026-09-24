@@ -15,7 +15,9 @@ export default function StageCard({ story }: { story: Story }) {
   const { current, next } = stageSummary(story.timeline)
   if (!current && !next) return null
   return (
-    <section
+    // a group, not a landmark: the full timeline section below has the same name
+    <div
+      role="group"
       aria-labelledby={titleId}
       className="flex flex-col gap-4 rounded-card border border-line bg-surface px-[18px] pt-[18px] pb-5"
     >
@@ -65,6 +67,6 @@ export default function StageCard({ story }: { story: Story }) {
           </>
         )}
       </div>
-    </section>
+    </div>
   )
 }

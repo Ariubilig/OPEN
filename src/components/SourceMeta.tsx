@@ -4,17 +4,29 @@ import { formatDate } from '../lib/format'
 import DataText from './DataText'
 import Icon from './Icon'
 
-/** "Албан эх сурвалж" / "Мэдээ" */
-export function KindBadge({ kind }: { kind: Source['kind'] }) {
+/** "Албан эх сурвалж" / "Мэдээ", optionally with a count ("Албан эх сурвалж 3"). */
+export function KindBadge({
+  kind,
+  count,
+}: {
+  kind: Source['kind']
+  count?: number
+}) {
+  const n =
+    count === undefined ? null : (
+      <span className="font-extrabold tabular-nums">{count}</span>
+    )
   return kind === 'official' ? (
     <span className="inline-flex h-[22px] items-center gap-[5px] rounded-md bg-accent-soft px-2 text-overline font-bold text-accent-strong">
       <Icon name="document" className="size-[13px]" />
       {copy.source.official}
+      {n}
     </span>
   ) : (
     <span className="inline-flex h-[22px] items-center gap-[5px] rounded-md bg-paper px-2 text-overline font-bold text-ink-2 shadow-[inset_0_0_0_1px_var(--line-strong)]">
       <Icon name="news" className="size-[13px]" />
       {copy.source.media}
+      {n}
     </span>
   )
 }
