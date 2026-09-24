@@ -5,10 +5,11 @@ import type { DocType, Stage } from './data/schema.ts'
 export const copy = {
   tagline: 'Мэдээлэл нээлттэй. Одоо ойлгомжтой.',
   principle: 'AI тайлбарлана. Албан ёсны эх сурвалж баталгаажуулна.',
-  nav: { home: 'Нүүр', about: 'Арга зүй' },
+  nav: { home: 'Нүүр', about: 'Арга зүй', search: 'Мэдээ хайх' },
   footer: {
-    prototype: 'Энэ бол хакатоны прототип. УИХ-ын албан ёсны сайт биш.',
-    event: 'Нээлттэй парламент хакатон 2026',
+    independent: `${APP_NAME} бол бие даасан иргэний мэдээллийн платформ. УИХ, Засгийн газрын албан ёсны сайт биш.`,
+    channels: 'Албан ёсны сувгууд',
+    copyright: (year: string) => `© ${year} ${APP_NAME}`,
   },
   a11y: {
     skipToContent: 'Үндсэн агуулга руу шилжих',
@@ -28,6 +29,34 @@ export const copy = {
     empty: 'Энэ шүүлтүүрт тохирох мэдээ алга.',
     sources: (n: number) => `${n} эх сурвалж`,
     count: (n: number) => `${n} мэдээ`,
+  },
+  search: {
+    label: 'Мэдээ хайх',
+    placeholder: 'Хууль, тоо, сэдвээр хайх',
+    clear: 'Хайлтыг арилгах',
+    empty: (q: string) => `Хайлтад тохирох мэдээ олдсонгүй: «${q}»`,
+  },
+  following: {
+    title: 'Дагаж буй',
+    hint: 'Дагасан баримт бичгүүдийнхээ шатыг эндээс хараарай.',
+    follow: 'Дагах',
+    followed: 'Дагаж байна',
+    added: 'Нүүр хуудасны «Дагаж буй» хэсэгт нэмлээ.',
+    removed: '«Дагаж буй» хэсгээс хаслаа.',
+    unfollow: (title: string) => `Дагахаа болих: ${title}`,
+  },
+  share: {
+    label: 'Хуваалцах',
+    copied: 'Холбоос хуулагдлаа.',
+    failed: 'Холбоосыг хуулж чадсангүй.',
+  },
+  tracker: {
+    title: 'Шийдвэрүүд хаана явж байна?',
+    hint: 'Бүх баримт бичгийн дараагийн огноо, сүүлийн үйл явдал нэг дор.',
+    upcoming: 'Удахгүй болох',
+    unscheduled: 'Огноо товлогдоогүй',
+    recent: 'Саяхан болсон',
+    days: 'хоног',
   },
   forYou: {
     title: 'Танд юу хамаатай вэ?',
@@ -121,6 +150,7 @@ export const copy = {
     here: 'Одоо энд',
     notScheduled: 'Товлогдоогүй',
     today: 'Өнөөдөр',
+    yesterday: 'Өчигдөр',
     inDays: (n: number) => `${n} хоногийн дараа`,
     daysAgo: (n: number) => `${n} хоногийн өмнө`,
     done: 'Болсон',
@@ -132,7 +162,7 @@ export const copy = {
       'Энэ баримт бичгийн талаар албан ёсны сувгаар санал бодлоо илэрхийлээрэй.',
     source: 'Эх сурвалж',
   },
-  placeholder: 'Баталгаажуулах',
+  placeholder: 'Баталгаажуулж байна',
   notFound: { title: 'Хуудас олдсонгүй', back: 'Нүүр хуудас руу буцах' },
   about: {
     title: 'Арга зүй',
@@ -140,54 +170,53 @@ export const copy = {
     position:
       'УИХ, Засгийн газрын цахим системүүд мэдээлэл, санал авах сувгаа нээлттэй гаргадаг. Бид тэдгээрийг орлохгүй, харин иргэдэд хүрэх нэгдсэн гүүр нь болно: мэдээллийг нь ойлгомжтой болгож, иргэдийг эргээд тэр сувгууд руу нь чиглүүлнэ.',
     stepsTitle: 'Хэрхэн бэлтгэдэг вэ',
+    // who does each step: the label is shown next to the step
+    actors: {
+      system: 'Автомат',
+      ai: 'AI',
+      editor: 'Редактор',
+      citizen: 'Иргэн',
+    },
     steps: [
       {
         name: 'Цуглуулах',
-        text: 'd.parliament.mn, legalinfo.mn, shilendans.gov.mn-ээс баримт бичиг цуглуулна.',
-        demo: 'Демод: гараар',
-        status: 'manual',
+        text: 'd.parliament.mn, legalinfo.mn, shilendans.gov.mn-ээс шинэ баримт бичгийг татаж авна.',
+        actor: 'system',
       },
       {
         name: 'Өөрчлөлт илрүүлэх',
         text: 'Өмнөх хувилбартай харьцуулж, өөрчлөгдсөн заалтыг олно.',
-        demo: 'Демод: гараар',
-        status: 'manual',
+        actor: 'system',
       },
       {
         name: 'AI ноорог',
-        text: 'Энгийн хэлээр тайлбарын ноорог бичнэ.',
-        demo: 'Демод: урьдчилан бэлтгэсэн',
-        status: 'prepared',
+        text: 'Өөрчлөлт бүрийг энгийн хэлээр тайлбарлаж, өгүүлбэр бүрт эх сурвалжийг нь холбоно.',
+        actor: 'ai',
       },
       {
         name: 'Хүний шалгалт',
-        text: 'Өгүүлбэр бүрийг эх бичвэртэй тулгана.',
-        demo: 'Демод: баг шалгасан',
-        status: 'manual',
+        text: 'Редактор өгүүлбэр бүрийг эх бичвэртэй тулгана.',
+        actor: 'editor',
       },
       {
         name: 'Нийтлэх',
-        text: 'Энэ сайтад мэдээ болгон нийтэлнэ.',
-        demo: 'Демод: ажиллаж байна',
-        status: 'built',
+        text: 'Мэдээ болгон нийтэлж, баримт бичгийн шатыг дагаж шинэчилнэ.',
+        actor: 'editor',
       },
       {
         name: 'Мэдэгдэл',
         text: 'Баримт бичгийн шат өөрчлөгдөхөд дагасан хүмүүст мэдэгдэнэ.',
-        demo: 'Дараагийн шат',
-        status: 'next',
+        actor: 'system',
       },
       {
         name: 'Санал өгөх',
-        text: 'Албан ёсны суваг руу чиглүүлнэ.',
-        demo: 'Демод: ажиллаж байна',
-        status: 'built',
+        text: 'Иргэнийг албан ёсны суваг руу чиглүүлнэ.',
+        actor: 'citizen',
       },
     ] satisfies {
       name: string
       text: string
-      demo: string
-      status: 'manual' | 'prepared' | 'built' | 'next'
+      actor: 'system' | 'ai' | 'editor' | 'citizen'
     }[],
     principlesTitle: 'Зарчим',
     principles: [

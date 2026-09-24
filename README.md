@@ -1,16 +1,19 @@
-# Тод — plain-language civic news (Open Parliament Hackathon 2026 demo)
+# Тод — plain-language civic news
 
-A mobile-first prototype of a news site where every story is built from one official document of
-the State Great Khural (УИХ) or the Government — a law, bill, resolution, regulation, budget or
-investment project. Each story explains in plain Mongolian what changed, what it means, who it
-affects, what it is based on (every sentence links to its source), where the document is in its
-process, and how a citizen can respond through an official channel (D-Parliament, legalinfo.mn,
-E-Mongolia, public petition). There is no backend and no live AI: the "AI draft + human review"
-output is pre-written in `src/data/stories/*.json`, and the About page (`/about`) says honestly
-which steps of the full system the demo does by hand.
+A mobile-first news site where every story is built from one official document of the State
+Great Khural (УИХ) or the Government — a law, bill, resolution, regulation, budget or investment
+project. Each story explains in plain Mongolian what changed, what it means, who it affects, what
+it is based on (every sentence links to its source), where the document is in its process, and
+how a citizen can respond through an official channel (D-Parliament, legalinfo.mn, E-Mongolia,
+public petition). Readers can search, follow documents and share stories; the feed tracks the
+next dates and latest steps of every document. Built for the Open Parliament Hackathon 2026.
 
-> **Энэ бол хакатоны прототип. УИХ-ын албан ёсны сайт биш.**
-> This is a hackathon prototype, not an official site of the State Great Khural.
+The site speaks as the finished product. [Showcase notes](#showcase-notes) list what runs today
+and what the full system adds.
+
+> **Тод бол бие даасан иргэний мэдээллийн платформ. УИХ, Засгийн газрын албан ёсны сайт биш.**
+> Tod is an independent civic information platform, not an official site of the State Great
+> Khural or the Government.
 
 Project rules for anyone (or any AI) editing the code: [CLAUDE.md](CLAUDE.md).
 
@@ -42,7 +45,7 @@ One story per file. Keep the JSON readable and don't reformat files you are not 
 ## Verify data
 
 - **`TODO_VERIFY`** — any value nobody has confirmed yet. Never guess: write the literal string
-  `TODO_VERIFY`. The site renders it as a dashed "Баталгаажуулах" box, never as raw text.
+  `TODO_VERIFY`. The site renders it as a dashed "Баталгаажуулж байна" box, never as raw text.
   It can also sit inside a string, e.g. `"…зүйл, заалт: TODO_VERIFY"`.
 - **`verify`** — a note to the reviewer (on a sentence, a timeline item, a key number, or a
   story-level list). It is never shown on the site.
@@ -68,6 +71,22 @@ Any static host. The build output is `dist/`.
 
 Fonts are bundled; the site makes no requests to third-party servers after it loads.
 
+## Showcase notes
+
+The site is written as the product will run once it is funded, but nothing on it is made up:
+every number, date and event comes from the story files, and there are no invented readers,
+counts or reviews (CLAUDE.md rule 13).
+
+| On the site                                         | What runs today                                                                                                                    |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Stories, sources, calculator                        | Written by the team from official documents (AI draft + human check) in `src/data/stories/*.json`. No backend.                     |
+| Арга зүй pipeline (Автомат / AI / Редактор / Иргэн) | The method. Automatic collection, change detection and notifications are what the funding builds; today the team runs those steps. |
+| Шийдвэрүүд хаана явж байна? (feed)                  | Computed from the story timelines: dated upcoming steps with day counts, next steps without a date, each document's latest step.   |
+| Search                                              | In the browser, over titles, summaries, changes, meaning, affected groups and timeline steps. `?q=` in the URL.                    |
+| Дагах / Дагаж буй                                   | Kept in the reader's browser (localStorage key `tod:following`). No account and no notifications yet.                              |
+| Хуваалцах                                           | The phone's share sheet (Web Share API), or copies the link.                                                                       |
+| Баталгаажуулж байна                                 | Any `TODO_VERIFY` value left in a story. Run `npm run check:strict` before showing the site.                                       |
+
 ## Before the demo
 
 - [ ] Fill every `TODO_VERIFY` in non-draft stories and resolve every `verify` note (`npm run check` lists both).
@@ -76,5 +95,7 @@ Fonts are bundled; the site makes no requests to third-party servers after it lo
 - [ ] Replace the E-Mongolia and petition links with the exact pages.
 - [ ] Create the УИХ-ын тогтоол story from `_template.json`.
 - [ ] Optionally set `DEMO_TODAY` for stable countdowns.
+- [ ] Decide how "Дагаж буй" starts: open the site in a private window for an empty list, or follow
+      the two featured stories beforehand so the feed opens with it.
 - [ ] Run `npm run check:strict && npm run build && npm run preview` with Wi-Fi off.
 - [ ] Record a 60-second screen capture as a backup.
