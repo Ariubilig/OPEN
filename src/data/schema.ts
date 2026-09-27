@@ -100,9 +100,12 @@ export function isIsoDate(value: string): boolean {
 }
 
 const Todo = z.literal(TODO)
+const DATE_MESSAGE = 'expected a real date as YYYY-MM-DD'
+// the pattern is also what the database's JSON Schema checks; the refinement rejects 2026-02-30
 const IsoDate = z
   .string()
-  .refine(isIsoDate, { message: 'expected a real date as YYYY-MM-DD' })
+  .regex(/^\d{4}-\d{2}-\d{2}$/, { message: DATE_MESSAGE })
+  .refine(isIsoDate, { message: DATE_MESSAGE })
 const IsoDateOrTodo = z.union([Todo, IsoDate])
 const Text = z.string().trim().min(1, { message: 'must not be empty' })
 const HttpsUrl = z

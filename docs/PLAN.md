@@ -5,7 +5,7 @@ running news site backed by Supabase. Each phase ends with its checks passing an
 the `claude/supabase` branch. Tick the boxes as phases land.
 
 - [x] Phase 0: plan, decisions, local Supabase project
-- [ ] Phase 1: database core (schema, row-level security, workflow functions, validation, DB tests)
+- [x] Phase 1: database core (schema, row-level security, workflow functions, validation, DB tests)
 - [ ] Phase 2: seed data and tooling (seed from the existing JSON, generated types, shared validator)
 - [ ] Phase 3: public site reads from Supabase
 - [ ] Phase 4: admin shell and staff sign-in
@@ -124,7 +124,7 @@ that the API does not expose.
 | Function                                                                                    | Who             | What                                                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------------------------------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `create_story(id, content, action)`                                                         | staff           | New working copy (`create`, `import` or `ai_draft`); `content.id` forced to `id`; `draft` key dropped.                                                                                                                                                                                                                                                                                 |
-| `save_story(id, content, version)`                                                          | staff           | Optimistic lock (HTTP 409 on a stale version). `published`/`changes_requested` → `draft`. Records `updated_by`.                                                                                                                                                                                                                                                                        |
+| `save_story(id, content, version)`                                                          | staff           | Optimistic lock (HTTP 409 on a stale version). `published` → `draft`; a story sent back stays `changes_requested` until it is resubmitted. Records `updated_by`.                                                                                                                                                                                                                       |
 | `submit_story(id, version, note)`                                                           | staff           | `draft`/`changes_requested` → `in_review`.                                                                                                                                                                                                                                                                                                                                             |
 | `request_changes(id, version, note)`                                                        | reviewer, admin | `in_review` → `changes_requested` with a required note.                                                                                                                                                                                                                                                                                                                                |
 | `publish_story(id, version, note, correction)`                                              | reviewer, admin | Two-person rule: the publisher is not the last person who changed the content (setting, on by default). Sets `publishedAt` on first publish, `updatedAt` on later ones, `reviewed = {by: reviewer's name, date: today in Ulaanbaatar}`, appends a dated correction when given. Runs `story_problems()`; any problem → HTTP 422 with codes. Writes the snapshot without reviewer notes. |
@@ -139,7 +139,8 @@ that the API does not expose.
 `story_problems(content)` returns codes with JSON paths, e.g. `unknown_source $.meaning[2].source`:
 `schema`, `id_mismatch`, `duplicate_source`, `unknown_source`, `timeline_source_required`,
 `timeline_current_count`, `timeline_order`, `featured_meaning`, `featured_affects`,
-`featured_evidence`, `featured_participate`, `featured_numbers`, `unknown_related`,
+`featured_evidence`, `featured_participate`, `featured_numbers`, `unknown_related` (no such story
+at all; the site hides links to unpublished ones, so two stories can link to each other),
 `self_related`, `unknown_channel`. The admin maps codes to Mongolian messages.
 
 ### Triggers
@@ -302,6 +303,11 @@ other local Supabase projects. `npm run dev` → `http://localhost:5173`, admin 
 
 ## 8. Risks
 
+- The local Postgres build (supabase/postgres 17.6.1.106) crashes a backend when a superuser
+  session does `SET ROLE anon` and then calls a function it may not execute. Through the API
+  (PostgREST) the same call returns a clean 42501, so it is not reachable from outside. DB tests
+  check function privileges with `has_function_privilege()` instead of calling. Re-check on the
+  hosted project before launch.
 - Official sites that render with JavaScript look unchanged to the watcher (it reads HTML only).
   The admin shows the last fetched text so an editor can tell.
 - Email deliverability needs a verified sending domain in Resend.
