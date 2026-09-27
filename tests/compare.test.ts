@@ -20,10 +20,10 @@ describe('prettyJson and lineDiff', () => {
     const blocks = lineDiff(before, after)
     expect(
       blocks.filter((b) => b.kind === 'removed').flatMap((b) => b.lines),
-    ).toEqual(['  "title": "a"'])
+    ).toEqual(['  "title": "a",'])
     expect(
       blocks.filter((b) => b.kind === 'added').flatMap((b) => b.lines),
-    ).toEqual(['  "title": "b"'])
+    ).toEqual(['  "title": "b",'])
     expect(
       lineDiff(
         before,
