@@ -9,10 +9,12 @@ import {
   notFoundLoader,
   rootLoader,
   rootShouldRevalidate,
+  searchLoader,
   storyLoader,
   storyShouldRevalidate,
 } from './routes/loaders'
 import NotFound from './routes/NotFound'
+import Search from './routes/Search'
 import Story from './routes/Story'
 
 export const router = createBrowserRouter([
@@ -44,6 +46,7 @@ export const router = createBrowserRouter([
                 shouldRevalidate: storyShouldRevalidate,
               },
               { path: 'about', element: <About /> },
+              { path: 'search', element: <Search />, loader: searchLoader },
               { path: '*', element: <NotFound />, loader: notFoundLoader },
             ],
           },
@@ -68,6 +71,7 @@ export const router = createBrowserRouter([
                 path: 'stories/:id',
                 lazy: () => import('./admin/pages/Editor'),
               },
+              { path: 'reports', lazy: () => import('./admin/pages/Reports') },
               {
                 path: 'settings',
                 lazy: () => import('./admin/pages/Settings'),

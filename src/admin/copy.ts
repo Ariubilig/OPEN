@@ -6,6 +6,7 @@ export const adminCopy = {
   nav: {
     label: 'Удирдлагын цэс',
     stories: 'Мэдээ',
+    reports: 'Алдааны мэдэгдэл',
     settings: 'Тохиргоо',
     site: 'Сайт руу',
   },
@@ -263,6 +264,29 @@ export const adminCopy = {
       },
       corrections: 'Засвар нийтлэх үед нэмэгдэнэ.',
     },
+  },
+
+  reports: {
+    title: 'Уншигчдын алдааны мэдэгдэл',
+    intro:
+      'Уншигчид «Алдаа мэдээлэх» товчоор илгээсэн мэдэгдэл. Эх сурвалжтай тулгаж шалгаад, мэдээг зассан бол дахин нийтлэхдээ засварын тэмдэглэл нэмнэ.',
+    filters: 'Төлөвөөр шүүх',
+    statuses: {
+      new: 'Шинэ',
+      resolved: 'Шийдсэн',
+      dismissed: 'Хэрэгсээгүй',
+    } as Record<string, string>,
+    resolve: 'Шийдсэн',
+    dismiss: 'Хэрэгсэхгүй',
+    reopen: 'Дахин нээх',
+    note: 'Тэмдэглэл',
+    noteHint: 'Юу хийснээ бичнэ үү. Зөвхөн редакц харна.',
+    contact: 'Холбоо барих',
+    openStory: 'Мэдээг засах',
+    onSite: 'Сайтад харах',
+    empty: 'Энэ төлөвт мэдэгдэл алга.',
+    closedBy: (name: string, date: string) => `${name}, ${date}`,
+    newCount: (n: number) => `${n} шинэ алдааны мэдэгдэл`,
   },
 
   workflow: {

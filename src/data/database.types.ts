@@ -108,6 +108,57 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          contact: string | null
+          created_at: string
+          id: number
+          message: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          story_id: string
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          id?: never
+          message: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          story_id: string
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          id?: never
+          message?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "story_admin_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           deploy_hook_url: string | null
@@ -353,6 +404,25 @@ export type Database = {
       }
     }
     Functions: {
+      add_staff: {
+        Args: {
+          p_name: string
+          p_role: Database["public"]["Enums"]["staff_role"]
+          p_user_id: string
+        }
+        Returns: {
+          created_at: string
+          name: string
+          role: Database["public"]["Enums"]["staff_role"]
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_story: {
         Args: {
           p_action?: Database["public"]["Enums"]["revision_action"]
@@ -446,6 +516,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      resolve_report: {
+        Args: { p_id: number; p_note?: string; p_status: string }
+        Returns: {
+          contact: string | null
+          created_at: string
+          id: number
+          message: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          story_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       restore_revision: {
         Args: { p_revision_id: number; p_version: number }
         Returns: {
@@ -490,6 +580,29 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      search_stories: {
+        Args: { p_query: string }
+        Returns: {
+          featured: boolean | null
+          groups: string[] | null
+          id: string | null
+          published_on: string | null
+          sort_order: number | null
+          source_count: number | null
+          stage: string | null
+          summary: Json | null
+          timeline: Json | null
+          title: string | null
+          topics: string[] | null
+          type: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "story_cards"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       set_staff_role: {
         Args: {
           p_role: Database["public"]["Enums"]["staff_role"]
@@ -497,7 +610,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      staff_user_id_by_email: { Args: { p_email: string }; Returns: string }
       story_problems: { Args: { p_content: Json }; Returns: string[] }
+      submit_report: {
+        Args: { p_contact?: string; p_message: string; p_story_id: string }
+        Returns: undefined
+      }
       submit_story: {
         Args: { p_id: string; p_note?: string; p_version: number }
         Returns: {

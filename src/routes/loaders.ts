@@ -7,6 +7,7 @@ import {
   fetchSite,
   fetchStoriesForGroup,
   fetchStory,
+  searchCards,
 } from '../data/api'
 import { parseGroup } from '../lib/groups'
 
@@ -52,6 +53,11 @@ export const storyShouldRevalidate: ShouldRevalidateFunction = ({
   defaultShouldRevalidate,
 }) =>
   currentUrl.pathname !== nextUrl.pathname ? defaultShouldRevalidate : false
+
+export async function searchLoader({ request }: LoaderFunctionArgs) {
+  const query = (new URL(request.url).searchParams.get('q') ?? '').trim()
+  return { query, cards: query ? await searchCards(query) : [] }
+}
 
 export async function notFoundLoader() {
   return { featured: await fetchFeaturedCards() }

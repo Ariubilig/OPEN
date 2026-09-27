@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation } from 'react-router'
 import { copy } from '../copy'
+import Icon from './Icon'
 import Wordmark from './Wordmark'
 
 // display is set per link: the home link only shows from md (the wordmark is home on phones)
@@ -32,6 +33,13 @@ export default function Header() {
             className={(s) => `hidden md:inline-flex ${navClass(s)}`}
           >
             {copy.nav.home}
+          </NavLink>
+          <NavLink
+            to="/search"
+            className={(s) => `inline-flex gap-1.5 ${navClass(s)}`}
+          >
+            <Icon name="search" className="size-[18px]" />
+            <span className="sr-only md:not-sr-only">{copy.nav.search}</span>
           </NavLink>
           <NavLink to="/about" className={(s) => `inline-flex ${navClass(s)}`}>
             {copy.nav.about}

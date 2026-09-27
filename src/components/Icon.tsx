@@ -15,6 +15,8 @@ const PATHS = {
   news: 'M4 5h12v14H6a2 2 0 0 1-2-2zM16 9h4v8a2 2 0 0 1-2 2h-2M7 9h6M7 12h6M7 15h4',
   document: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
   voice: 'M4 10v4h3l5 4V6L7 10zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11',
+  search: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM20 20l-4-4',
+  flag: 'M5 21V4M5 4h11l-2 4 2 4H5',
 } as const
 
 export type IconName = keyof typeof PATHS

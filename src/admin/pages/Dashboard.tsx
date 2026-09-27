@@ -19,15 +19,21 @@ const STATES: StoryState[] = [
 ]
 
 export async function loader() {
-  const rows = await call(
+  const [rows, reports] = await Promise.all([
+    call(
+      supabase
+        .from('story_admin_list')
+        .select(
+          'id, state, title, type, stage, review_note, updated_at, updated_by_name, is_live, published_at, todo_count',
+        )
+        .order('updated_at', { ascending: false }),
+    ),
     supabase
-      .from('story_admin_list')
-      .select(
-        'id, state, title, type, stage, review_note, updated_at, updated_by_name, is_live, published_at, todo_count',
-      )
-      .order('updated_at', { ascending: false }),
-  )
-  return { rows }
+      .from('reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'new'),
+  ])
+  return { rows, newReports: reports.count ?? 0 }
 }
 
 type Row = Awaited<ReturnType<typeof loader>>['rows'][number]
@@ -93,7 +99,9 @@ function StoryRow({ row }: { row: Row }) {
 
 export function Component() {
   useDocumentTitle(`${t.title} · ${adminCopy.title}`)
-  const { rows } = useLoaderData() as Awaited<ReturnType<typeof loader>>
+  const { rows, newReports } = useLoaderData() as Awaited<
+    ReturnType<typeof loader>
+  >
   const [params, setParams] = useSearchParams()
   const state = STATES.find((s) => s === params.get('state')) ?? null
   const [query, setQuery] = useState('')
@@ -146,6 +154,17 @@ export function Component() {
           {t.newStory}
         </Link>
       </PageHeader>
+
+      {newReports > 0 && (
+        <Link
+          to="/admin/reports"
+          className="flex min-h-11 items-center gap-2 self-start rounded-xl border border-placeholder-line bg-placeholder-bg px-4 py-2 text-small font-semibold text-placeholder-ink"
+        >
+          <Icon name="flag" className="size-4" />
+          {adminCopy.reports.newCount(newReports)}
+          <Icon name="arrowRight" className="size-4" />
+        </Link>
+      )}
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div

@@ -235,3 +235,39 @@ export function fetchStoriesForGroup(group: Group): Promise<Story[]> {
     )
   })
 }
+
+// ---- search ------------------------------------------------------------------------------------
+
+/** Published stories matching the words of `query`, best first (search_stories() in SQL). */
+export function searchCards(query: string): Promise<StoryCard[]> {
+  const q = query.trim()
+  if (!q) return Promise.resolve([])
+  return cached(`search:${q.toLowerCase()}`, async () =>
+    parseEach(
+      'story card',
+      StoryCardSchema,
+      rows(
+        await db
+          .rpc('search_stories', { p_query: q }, { get: true })
+          .select(CARD_COLUMNS),
+      ).map(toCard),
+    ),
+  )
+}
+
+// ---- writes a reader can make ------------------------------------------------------------------
+
+/** "Алдаа мэдээлэх": a reader's note about an error in a published story. */
+export async function submitReport(
+  storyId: string,
+  message: string,
+  contact: string,
+): Promise<void> {
+  check(
+    await db.rpc('submit_report', {
+      p_story_id: storyId,
+      p_message: message,
+      p_contact: contact,
+    }),
+  )
+}

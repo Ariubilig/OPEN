@@ -82,6 +82,9 @@ export function Component() {
             <NavLink to="/admin" end className={navClass}>
               {adminCopy.nav.stories}
             </NavLink>
+            <NavLink to="/admin/reports" className={navClass}>
+              {adminCopy.nav.reports}
+            </NavLink>
             <NavLink to="/admin/settings" className={navClass}>
               {adminCopy.nav.settings}
             </NavLink>

@@ -10,6 +10,7 @@ import KeyNumbers from '../components/KeyNumbers'
 import MeaningBlock from '../components/MeaningBlock'
 import NumberExplainer from '../components/NumberExplainer'
 import ParticipateBlock from '../components/ParticipateBlock'
+import ReportButton from '../components/ReportButton'
 import Positions from '../components/Positions'
 import RelatedStories, { type RelatedItem } from '../components/RelatedStories'
 import SectionNav, { goToSection, type NavItem } from '../components/SectionNav'
@@ -18,7 +19,6 @@ import SourcesBlock from '../components/SourcesBlock'
 import StageCard from '../components/StageCard'
 import StoryHeader from '../components/StoryHeader'
 import Timeline from '../components/Timeline'
-import { APP_NAME, REPORT_EMAIL } from '../config'
 import { copy } from '../copy'
 import type { Story as StoryData } from '../data/schema'
 import { useSite } from '../data/site'
@@ -343,14 +343,7 @@ export function StoryPage({
               <Icon name="info" className="size-5" />
               {copy.story.disclaimer}
             </p>
-            {REPORT_EMAIL && (
-              <a
-                href={`mailto:${REPORT_EMAIL}?subject=${encodeURIComponent(`${APP_NAME}: ${story.title}`)}`}
-                className="inline-flex min-h-11 items-center text-small font-semibold text-accent underline underline-offset-3"
-              >
-                {copy.story.reportError}
-              </a>
-            )}
+            {!preview && <ReportButton storyId={story.id} />}
           </div>
         </div>
 
