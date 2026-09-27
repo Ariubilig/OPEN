@@ -1,14 +1,12 @@
-import { Link } from 'react-router'
+import { Link, useLoaderData } from 'react-router'
 import Icon from '../components/Icon'
-import RelatedStories from '../components/RelatedStories'
+import RelatedStories, { type RelatedItem } from '../components/RelatedStories'
 import { copy } from '../copy'
-import { stories } from '../data'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
-
-const featured = stories.filter((s) => s.featured)
+import type { notFoundLoader } from './loaders'
 
 /** Unknown path or story id: say so, offer the way home and the featured stories. */
-export default function NotFound() {
+export function NotFoundPage({ featured }: { featured: RelatedItem[] }) {
   useDocumentTitle(copy.notFound.title)
   return (
     <div className="mx-auto max-w-reading px-4 pt-10 md:pt-[72px]">
@@ -40,4 +38,10 @@ export default function NotFound() {
       )}
     </div>
   )
+}
+
+/** The catch-all route. */
+export default function NotFound() {
+  const { featured } = useLoaderData<typeof notFoundLoader>()
+  return <NotFoundPage featured={featured} />
 }

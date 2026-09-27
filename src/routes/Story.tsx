@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
-import { useParams } from 'react-router'
+import { useLoaderData } from 'react-router'
 import AffectsBlock from '../components/AffectsBlock'
 import Calculator from '../components/Calculator'
 import ChangeBlock from '../components/ChangeBlock'
@@ -11,7 +11,7 @@ import MeaningBlock from '../components/MeaningBlock'
 import NumberExplainer from '../components/NumberExplainer'
 import ParticipateBlock from '../components/ParticipateBlock'
 import Positions from '../components/Positions'
-import RelatedStories, { relatedStories } from '../components/RelatedStories'
+import RelatedStories, { type RelatedItem } from '../components/RelatedStories'
 import SectionNav, { goToSection, type NavItem } from '../components/SectionNav'
 import SourceSheetProvider from '../components/SourceSheet'
 import SourcesBlock from '../components/SourcesBlock'
@@ -20,18 +20,18 @@ import StoryHeader from '../components/StoryHeader'
 import Timeline from '../components/Timeline'
 import { APP_NAME, REPORT_EMAIL } from '../config'
 import { copy } from '../copy'
-import { getStory } from '../data'
 import type { Story as StoryData } from '../data/schema'
+import { useSite } from '../data/site'
 import { formatDate } from '../lib/format'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
-import NotFound from './NotFound'
+import type { storyLoader } from './loaders'
+import { NotFoundPage } from './NotFound'
 
 export default function Story() {
-  const { id = '' } = useParams()
-  const story = getStory(id)
-  if (!story) return <NotFound />
+  const { story, related, featured } = useLoaderData<typeof storyLoader>()
+  if (!story) return <NotFoundPage featured={featured} />
   // key: a related-story link mounts a fresh page (nav state, open panels)
-  return <StoryPage key={story.id} story={story} />
+  return <StoryPage key={story.id} story={story} related={related} />
 }
 
 type SectionId =
@@ -58,11 +58,14 @@ const ORDER: SectionId[] = [
   'participate',
 ]
 
-/** Which sections this story has data for. */
-function sectionsOf(story: StoryData): Record<SectionId, boolean> {
+/** Which sections this story has data for (the calculator also needs the tax rules). */
+function sectionsOf(
+  story: StoryData,
+  hasTaxRules: boolean,
+): Record<SectionId, boolean> {
   return {
     changes: (story.changes?.length ?? 0) > 0,
-    calculator: story.calculator === 'pit',
+    calculator: story.calculator === 'pit' && hasTaxRules,
     'key-numbers': (story.keyNumbers?.length ?? 0) > 0,
     meaning: story.meaning.length > 0 || (story.positions?.length ?? 0) > 0,
     affects: story.affects.length > 0,
@@ -149,18 +152,27 @@ function ParticipateButton() {
   )
 }
 
-function StoryPage({ story }: { story: StoryData }) {
+/**
+ * The story page. Also the admin's preview of a working copy, which passes `related` itself.
+ */
+export function StoryPage({
+  story,
+  related,
+}: {
+  story: StoryData
+  related: RelatedItem[]
+}) {
   useDocumentTitle(story.title)
-  const has = sectionsOf(story)
+  const hasTaxRules = useSite().taxRules !== null
+  const has = sectionsOf(story, hasTaxRules)
   const navItems = useMemo<NavItem[]>(() => {
-    const present = sectionsOf(story)
+    const present = sectionsOf(story, hasTaxRules)
     return ORDER.filter((id) => present[id]).map((id) => ({
       id,
       label: NAV_LABELS[id],
     }))
-  }, [story])
+  }, [story, hasTaxRules])
   const number = (id: SectionId) => navItems.findIndex((i) => i.id === id) + 1
-  const related = relatedStories(story)
   const summary = (
     <>
       <StageCard story={story} />

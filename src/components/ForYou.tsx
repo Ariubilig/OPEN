@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { copy } from '../copy'
-import { stories } from '../data'
+import type { StoryCard } from '../data/api'
 import type { Affect, Group, Story } from '../data/schema'
 import { groupCounts, storiesFor } from '../lib/groups'
 import { TypeLabel } from './Badge'
@@ -9,8 +9,6 @@ import CitedText from './CitedText'
 import DataText from './DataText'
 import Icon from './Icon'
 import SourceSheetProvider from './SourceSheet'
-
-const counts = groupCounts(stories)
 
 function storyLink(story: Story, group: Group) {
   return `/story/${story.id}?group=${encodeURIComponent(group)}`
@@ -74,16 +72,23 @@ function ForYouCard({
 /**
  * "Танд юу хамаатай вэ?": pick a group (Оюутан, Ажилтан …) and see, story by story, the cited
  * sentences that say what changes for that group. Every sentence keeps its source marker.
+ * The chips count from the feed's cards; the chosen group's full stories come from the loader.
  */
 export default function ForYou({
+  cards,
   group,
+  stories,
   onSelect,
 }: {
+  cards: StoryCard[]
   group: Group | null
+  /** full stories that affect `group` (null when no group is chosen) */
+  stories: Story[] | null
   onSelect: (group: Group | null) => void
 }) {
+  const counts = groupCounts(cards)
   if (counts.length === 0) return null
-  const results = group ? storiesFor(stories, group) : []
+  const results = group && stories ? storiesFor(stories, group) : []
   return (
     <section
       aria-labelledby="for-you-title"

@@ -16,15 +16,22 @@ Project rules for anyone (or any AI) editing the code: [CLAUDE.md](CLAUDE.md).
 
 ## Run
 
+Stories live in Supabase (Postgres). Locally that is the Supabase CLI's Docker stack; the plan
+for the whole product is in [docs/PLAN.md](docs/PLAN.md).
+
 ```bash
 npm install
+npm run db:start   # local Supabase on ports 553xx (needs Docker); prints the keys
+npm run db:reset   # apply supabase/migrations and load supabase/seed.sql
+cp .env.example .env.local   # then paste the publishable key from db:start
 npm run dev        # http://localhost:5173
 npm run build      # data check + typecheck + production build into dist/
 npm run preview    # serve dist/ at http://localhost:4173
 ```
 
 Other scripts: `npm run typecheck`, `npm run test`, `npm run check`, `npm run check:strict`,
-`npm run format`.
+`npm run format`, `npm run db:test` (database tests), `npm run db:seed` (regenerate
+`supabase/seed.sql` from `supabase/seed/`), `npm run db:types`, `npm run db:json-schema`.
 
 ## Add a story
 

@@ -1,12 +1,11 @@
-import { useLayoutEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router'
+import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useLoaderData, useSearchParams } from 'react-router'
 import FeedCard, { FeatureCard, LeadCard } from '../components/FeedCard'
 import { TopicChips, TypeSelect } from '../components/FilterBar'
 import ForYou from '../components/ForYou'
 import Icon from '../components/Icon'
 import SentenceLines from '../components/SentenceLines'
 import { copy } from '../copy'
-import { stories } from '../data'
 import {
   DOC_TYPES,
   TOPICS,
@@ -16,13 +15,7 @@ import {
 } from '../data/schema'
 import { parseGroup } from '../lib/groups'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
-
-// Filter options: only the types and topics present in the data, in schema order.
-const typeOptions = DOC_TYPES.filter((t) => stories.some((s) => s.type === t))
-const topicOptions = TOPICS.filter((t) =>
-  stories.some((s) => s.topics.includes(t)),
-)
-const featuredStories = stories.filter((s) => s.featured)
+import type { feedLoader } from './loaders'
 
 function pick<T extends string>(
   value: string | null,
@@ -33,6 +26,18 @@ function pick<T extends string>(
 
 export default function Feed() {
   useDocumentTitle()
+  const { cards: stories, groupStories } = useLoaderData<typeof feedLoader>()
+  // Filter options: only the types and topics present in the data, in schema order.
+  const { typeOptions, topicOptions, featuredStories } = useMemo(
+    () => ({
+      typeOptions: DOC_TYPES.filter((t) => stories.some((s) => s.type === t)),
+      topicOptions: TOPICS.filter((t) =>
+        stories.some((s) => s.topics.includes(t)),
+      ),
+      featuredStories: stories.filter((s) => s.featured),
+    }),
+    [stories],
+  )
   const [params, setParams] = useSearchParams()
   const type = pick<DocType>(params.get('type'), typeOptions)
   const topic = pick<Topic>(params.get('topic'), topicOptions)
@@ -120,7 +125,14 @@ export default function Feed() {
         </section>
       )}
 
-      {!filtered && <ForYou group={group} onSelect={setGroup} />}
+      {!filtered && (
+        <ForYou
+          cards={stories}
+          group={group}
+          stories={groupStories}
+          onSelect={setGroup}
+        />
+      )}
 
       <section aria-labelledby="all-title" className="mt-10 lg:mt-[72px]">
         <div ref={barRef} className="flex flex-col gap-3.5 lg:gap-[18px]">

@@ -110,7 +110,9 @@ const IsoDateOrTodo = z.union([Todo, IsoDate])
 const Text = z.string().trim().min(1, { message: 'must not be empty' })
 const HttpsUrl = z
   .string()
-  .regex(/^https:\/\/\S+$/, { message: 'expected a URL starting with https://' })
+  .regex(/^https:\/\/\S+$/, {
+    message: 'expected a URL starting with https://',
+  })
 const UrlOrTodo = z.union([Todo, HttpsUrl])
 
 // ---- story parts ----------------------------------------------------------
@@ -216,7 +218,9 @@ export const StorySchema = z.strictObject({
   participate: z.array(ParticipateRefSchema),
   relatedStoryIds: z.array(Text).optional(),
   sources: z.array(SourceSchema).min(1),
-  corrections: z.array(z.strictObject({ date: IsoDate, text: Text })).optional(),
+  corrections: z
+    .array(z.strictObject({ date: IsoDate, text: Text }))
+    .optional(),
   verify: z.array(Text).optional(), // team notes — never rendered
 })
 

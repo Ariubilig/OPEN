@@ -4,7 +4,7 @@ import NumberTag from '../components/NumberTag'
 import { ChannelCard } from '../components/ParticipateBlock'
 import SentenceLines from '../components/SentenceLines'
 import { copy } from '../copy'
-import { channels } from '../data'
+import { useSite } from '../data/site'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 type StepStatus = (typeof copy.about.steps)[number]['status']
@@ -56,6 +56,7 @@ function DataSource({ line }: { line: string }) {
 
 export default function About() {
   useDocumentTitle(copy.about.title)
+  const { channels } = useSite()
   const steps = copy.about.steps
   return (
     <div className="mx-auto max-w-page px-4 pt-8 md:px-8 md:pt-[72px]">
@@ -163,7 +164,7 @@ export default function About() {
 
       <p className="mt-12 flex items-start gap-2.5 rounded-card border border-line bg-surface p-4 text-[15px] leading-[22px] font-semibold lg:mt-20">
         <Icon name="info" className="size-5" />
-        {copy.footer.prototype}
+        {copy.footer.notOfficial}
       </p>
     </div>
   )

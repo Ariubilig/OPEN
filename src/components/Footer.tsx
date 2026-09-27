@@ -13,7 +13,7 @@ export default function Footer() {
           </p>
         </div>
         <div className="flex flex-col gap-2.5 text-small">
-          <p className="font-semibold">{copy.footer.prototype}</p>
+          <p className="font-semibold">{copy.footer.notOfficial}</p>
           <p className="flex flex-wrap items-center gap-x-2 text-on-ink-2">
             <span>{copy.footer.event}</span>
             <span aria-hidden="true">·</span>

@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { copy } from '../copy'
-import type { Story } from '../data/schema'
+import type { StoryCard } from '../data/api'
 import { formatDate } from '../lib/format'
 import { TypeLabel } from './Badge'
 import DataText from './DataText'
@@ -17,7 +17,7 @@ function TypeAndStage({
   story,
   tone,
 }: {
-  story: Story
+  story: StoryCard
   tone: 'light' | 'dark'
 }) {
   return (
@@ -38,14 +38,14 @@ function TypeAndStage({
   )
 }
 
-function Meta({ story, tone }: { story: Story; tone: 'light' | 'dark' }) {
+function Meta({ story, tone }: { story: StoryCard; tone: 'light' | 'dark' }) {
   return (
     <p
       className={`text-meta tabular-nums ${tone === 'dark' ? 'text-on-ink-3' : 'text-muted'}`}
     >
       <time dateTime={story.publishedAt}>{formatDate(story.publishedAt)}</time>
       <span aria-hidden="true"> · </span>
-      {copy.feed.sources(story.sources.length)}
+      {copy.feed.sources(story.sourceCount)}
     </p>
   )
 }
@@ -64,7 +64,7 @@ function ArrowDot({ tone }: { tone: 'light' | 'dark' }) {
 }
 
 /** The first featured story: an ink card with the key amount of its title highlighted. */
-export function LeadCard({ story }: { story: Story }) {
+export function LeadCard({ story }: { story: StoryCard }) {
   return (
     <article
       className={`on-ink group relative flex flex-col gap-3.5 rounded-card bg-ink p-5 text-on-ink has-[a:focus-visible]:outline-highlight lg:gap-5 lg:rounded-card-lg lg:p-8 ${FOCUS_RING}`}
@@ -95,7 +95,7 @@ export function LeadCard({ story }: { story: Story }) {
 }
 
 /** Other featured stories: a white card with the same stage block. */
-export function FeatureCard({ story }: { story: Story }) {
+export function FeatureCard({ story }: { story: StoryCard }) {
   return (
     <article
       className={`group relative flex flex-col gap-3.5 rounded-card border border-line bg-surface p-5 transition-colors hover:border-ink/40 has-[a:focus-visible]:outline-accent lg:gap-[18px] lg:rounded-card-lg lg:p-8 ${FOCUS_RING}`}
@@ -125,7 +125,7 @@ export function FeatureCard({ story }: { story: Story }) {
 }
 
 /** One story in the list: type and date, title, two lines of summary, stage. */
-export default function FeedCard({ story }: { story: Story }) {
+export default function FeedCard({ story }: { story: StoryCard }) {
   return (
     <article
       className={`group relative flex flex-col gap-2.5 rounded-card border border-line bg-surface p-4 transition-colors hover:border-ink/40 has-[a:focus-visible]:outline-accent lg:p-6 ${FOCUS_RING}`}
@@ -157,7 +157,7 @@ export default function FeedCard({ story }: { story: Story }) {
           <span className="text-meta font-semibold">{story.stage}</span>
         </span>
         <span className="shrink-0 text-meta text-muted">
-          {copy.feed.sources(story.sources.length)}
+          {copy.feed.sources(story.sourceCount)}
         </span>
       </div>
     </article>

@@ -1,6 +1,6 @@
 import { copy } from '../copy'
-import { getChannel } from '../data'
 import { TODO, type Channel, type ParticipateRef } from '../data/schema'
+import { useSite } from '../data/site'
 import DataText from './DataText'
 import ExternalLink from './ExternalLink'
 import Icon from './Icon'
@@ -94,6 +94,7 @@ export function ChannelCard({
 
 /** Official channels to respond through, with the story-specific action label. */
 export default function ParticipateBlock({ refs }: { refs: ParticipateRef[] }) {
+  const { channels } = useSite()
   return (
     <>
       <p className="text-[16px] leading-[25px] text-on-ink-2">
@@ -101,7 +102,7 @@ export default function ParticipateBlock({ refs }: { refs: ParticipateRef[] }) {
       </p>
       <ul className="mt-1 flex flex-col gap-3">
         {refs.map((ref, i) => {
-          const channel = getChannel(ref.channel)
+          const channel = channels.find((c) => c.id === ref.channel)
           if (!channel) return null
           return (
             <ChannelCard
