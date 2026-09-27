@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import channelsJson from './channels.json'
+import channelsJson from '../../supabase/seed/channels.json'
 import {
   ChannelsSchema,
   formatIssues,
@@ -9,11 +9,11 @@ import {
   type ChannelId,
   type Story,
 } from './schema'
-import taxRulesJson from './taxRules.json'
+import taxRulesJson from '../../supabase/seed/taxRules.json'
 
 // Files starting with "_" are templates and are never bundled.
 const storyFiles = import.meta.glob<unknown>(
-  ['./stories/*.json', '!./stories/_*.json'],
+  ['../../supabase/seed/stories/*.json', '!../../supabase/seed/stories/_*.json'],
   { eager: true, import: 'default' },
 )
 
@@ -26,7 +26,7 @@ function parse<S extends z.ZodType>(
   const result = schema.safeParse(raw)
   if (!result.success) {
     throw new Error(
-      `Invalid data in src/data/${file}:\n  ${formatIssues(result.error).join('\n  ')}`,
+      `Invalid data in supabase/seed/${file}:\n  ${formatIssues(result.error).join('\n  ')}`,
     )
   }
   return result.data
@@ -43,7 +43,7 @@ function isDraft(raw: unknown): boolean {
 function loadStories(): Story[] {
   const loaded: Story[] = []
   for (const [path, raw] of Object.entries(storyFiles)) {
-    const file = path.replace(/^\.\//, '')
+    const file = path.replace(/^.*\/seed\//, '')
     // Drafts may be half-filled while the team works on them: skip before validating.
     if (file.startsWith('stories/_') || isDraft(raw)) continue
     loaded.push(parse(file, StorySchema, raw))

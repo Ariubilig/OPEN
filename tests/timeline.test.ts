@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getStory } from '../src/data'
+import { getStory } from './fixtures'
 import type { TimelineItem } from '../src/data/schema'
 import { countdown, nextDatedIndex, stageSummary } from '../src/lib/timeline'
 

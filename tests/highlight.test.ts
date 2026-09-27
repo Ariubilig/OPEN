@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { stories } from '../src/data'
+import { stories } from './fixtures'
 import { splitFirstAmount, splitNumberUnit } from '../src/lib/highlight'
 
 describe('splitFirstAmount', () => {

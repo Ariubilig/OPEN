@@ -1,5 +1,10 @@
-# Story JSON is edited by hand in parallel — never reflow it
-src/data/
+# Seed JSON is edited by hand — never reflow it
+supabase/seed/
 
 dist
 package-lock.json
+
+# generated
+src/data/database.types.ts
+supabase/seed.sql
+supabase/migrations/*_json_schemas.sql
