@@ -1,7 +1,6 @@
 import { createBrowserRouter } from 'react-router'
 import Layout from './components/Layout'
 import { LoadingScreen, PageError, RootError } from './components/StatusScreens'
-import About from './routes/About'
 import Feed from './routes/Feed'
 import {
   feedLoader,
@@ -14,8 +13,6 @@ import {
   storyShouldRevalidate,
 } from './routes/loaders'
 import NotFound from './routes/NotFound'
-import Search from './routes/Search'
-import Story from './routes/Story'
 
 export const router = createBrowserRouter([
   {
@@ -39,14 +36,29 @@ export const router = createBrowserRouter([
                 loader: feedLoader,
                 shouldRevalidate: feedShouldRevalidate,
               },
+              // Each page's code loads with its data (the loader is not lazy, so both start at once);
+              // the feed and the page frame are in the main bundle.
               {
                 path: 'story/:id',
-                element: <Story />,
                 loader: storyLoader,
                 shouldRevalidate: storyShouldRevalidate,
+                lazy: async () => ({
+                  Component: (await import('./routes/Story')).default,
+                }),
               },
-              { path: 'about', element: <About /> },
-              { path: 'search', element: <Search />, loader: searchLoader },
+              {
+                path: 'about',
+                lazy: async () => ({
+                  Component: (await import('./routes/About')).default,
+                }),
+              },
+              {
+                path: 'search',
+                loader: searchLoader,
+                lazy: async () => ({
+                  Component: (await import('./routes/Search')).default,
+                }),
+              },
               { path: '*', element: <NotFound />, loader: notFoundLoader },
             ],
           },

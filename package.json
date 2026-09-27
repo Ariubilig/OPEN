@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host",
     "prebuild": "tsx scripts/check.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsx scripts/prerender.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",

@@ -12,7 +12,7 @@ the `claude/supabase` branch. Tick the boxes as phases land.
 - [x] Phase 5: story editor
 - [x] Phase 6: review and publishing workflow
 - [x] Phase 7: reader error reports and search
-- [ ] Phase 8: SEO and sharing (per-story link previews, sitemap, RSS)
+- [x] Phase 8: SEO and sharing (per-story link previews, sitemap, RSS)
 - [ ] Phase 9: email alerts when a story's stage changes
 - [ ] Phase 10: AI draft with Claude
 - [ ] Phase 11: document watcher
