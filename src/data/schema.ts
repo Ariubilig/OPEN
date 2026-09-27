@@ -108,11 +108,9 @@ const IsoDate = z
   .refine(isIsoDate, { message: DATE_MESSAGE })
 const IsoDateOrTodo = z.union([Todo, IsoDate])
 const Text = z.string().trim().min(1, { message: 'must not be empty' })
-const HttpsUrl = z
-  .string()
-  .regex(/^https:\/\/\S+$/, {
-    message: 'expected a URL starting with https://',
-  })
+const HttpsUrl = z.string().regex(/^https:\/\/\S+$/, {
+  message: 'expected a URL starting with https://',
+})
 const UrlOrTodo = z.union([Todo, HttpsUrl])
 
 // ---- story parts ----------------------------------------------------------

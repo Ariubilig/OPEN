@@ -36,3 +36,19 @@ function utcDay(iso: string): number {
 export function daysBetween(from: string, to: string): number {
   return Math.round((utcDay(to) - utcDay(from)) / DAY_MS)
 }
+
+/** A timestamp as '2026.09.27 19:05' in Ulaanbaatar time (the admin's lists and history). */
+export function formatDateTime(value: string | Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ulaanbaatar',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(typeof value === 'string' ? new Date(value) : value)
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('year')}.${get('month')}.${get('day')} ${get('hour')}:${get('minute')}`
+}

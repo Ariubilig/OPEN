@@ -49,6 +49,30 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      {
+        // staff only; every page is its own lazy chunk, so readers never download the admin
+        path: 'admin',
+        lazy: () => import('./admin/AdminFrame'),
+        children: [
+          { path: 'login', lazy: () => import('./admin/pages/Login') },
+          {
+            id: 'staff',
+            lazy: () => import('./admin/StaffLayout'),
+            children: [
+              { index: true, lazy: () => import('./admin/pages/Dashboard') },
+              {
+                path: 'stories/:id',
+                lazy: () => import('./admin/pages/StoryView'),
+              },
+              {
+                path: 'settings',
+                lazy: () => import('./admin/pages/Settings'),
+              },
+              { path: '*', lazy: () => import('./admin/pages/AdminNotFound') },
+            ],
+          },
+        ],
+      },
     ],
   },
 ])

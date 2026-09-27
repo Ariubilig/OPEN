@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   daysBetween,
   formatDate,
+  formatDateTime,
   formatMNT,
   formatThousands,
   today,
@@ -56,5 +57,14 @@ describe('today', () => {
 
   it('returns YYYY-MM-DD', () => {
     expect(today()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('formatDateTime', () => {
+  it('shows Ulaanbaatar time as YYYY.MM.DD HH:mm', () => {
+    expect(formatDateTime('2026-09-27T11:05:00Z')).toBe('2026.09.27 19:05')
+    expect(formatDateTime(new Date('2026-12-31T16:30:00Z'))).toBe(
+      '2027.01.01 00:30',
+    )
   })
 })

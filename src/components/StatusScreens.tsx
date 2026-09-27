@@ -43,6 +43,13 @@ export function RootError() {
 
 /** First load, before any page data is in: the page frame with a quiet placeholder. */
 export function LoadingScreen() {
+  // the admin has its own frame: a plain line instead of the public page's skeleton
+  if (window.location.pathname.startsWith('/admin'))
+    return (
+      <p role="status" className="p-6 text-muted">
+        {copy.loading}
+      </p>
+    )
   return (
     <AppShell>
       <div

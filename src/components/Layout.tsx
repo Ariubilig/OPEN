@@ -49,7 +49,7 @@ export function AppShell({
 }
 
 /** While the next page's data loads: a stripe along the top edge (announced to screen readers). */
-function PendingBar() {
+export function PendingBar() {
   const loading = useNavigation().state === 'loading'
   return (
     <>
