@@ -10,7 +10,7 @@ the `claude/supabase` branch. Tick the boxes as phases land.
 - [x] Phase 3: public site reads from Supabase
 - [x] Phase 4: admin shell and staff sign-in
 - [x] Phase 5: story editor
-- [ ] Phase 6: review and publishing workflow
+- [x] Phase 6: review and publishing workflow
 - [ ] Phase 7: reader error reports and search
 - [ ] Phase 8: SEO and sharing (per-story link previews, sitemap, RSS)
 - [ ] Phase 9: email alerts when a story's stage changes

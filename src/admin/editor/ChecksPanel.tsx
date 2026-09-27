@@ -46,12 +46,10 @@ export function focusPath(path: string): void {
   }
   const key = /^\$\.([A-Za-z]+)/.exec(path)?.[1]
   const section = SECTIONS.find((s) => key && s.keys.includes(key))
-  document
-    .getElementById(`sec-${section?.id ?? 'basics'}`)
-    ?.scrollIntoView({
-      block: 'start',
-      behavior: reducedMotion() ? 'auto' : 'smooth',
-    })
+  document.getElementById(`sec-${section?.id ?? 'basics'}`)?.scrollIntoView({
+    block: 'start',
+    behavior: reducedMotion() ? 'auto' : 'smooth',
+  })
 }
 
 function Item({

@@ -1,9 +1,11 @@
 // The story editor: every part of a story as a form, live checks against the publishing rules,
-// and a preview that is the real story page.
+// a preview that is the real story page, the review and publishing steps, the changes against
+// what is live, and the full history.
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   Link,
   useLoaderData,
+  useLocation,
   useNavigate,
   useRevalidator,
   useSearchParams,
@@ -12,6 +14,7 @@ import {
 } from 'react-router'
 import DataText from '../../components/DataText'
 import Icon from '../../components/Icon'
+import { clearCache } from '../../data/api'
 import { useSite } from '../../data/site'
 import { formatDateTime, today } from '../../lib/format'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
@@ -24,9 +27,12 @@ import {
   asText,
   type EditorApi,
 } from '../editor/context'
+import DiffView from '../editor/DiffView'
 import { asPublished, downloadJson } from '../editor/documents'
+import HistoryView, { fetchRevisions } from '../editor/HistoryView'
 import { SECTION_COMPONENTS, SECTIONS } from '../editor/sections'
 import { useStoryDraft, type StoryRow } from '../editor/useStoryDraft'
+import Workflow, { type WorkflowDone } from '../editor/Workflow'
 import { ErrorsProvider } from '../fields'
 import { useStaff } from '../session'
 import StoryPreview from '../StoryPreview'
@@ -38,13 +44,25 @@ const t = adminCopy.editor
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const id = params.id ?? ''
-  const [story, list] = await Promise.all([
+  const [story, list, live, revisions, team, settings] = await Promise.all([
     maybe(supabase.from('stories').select('*').eq('id', id).maybeSingle()),
     call(
       supabase
         .from('story_admin_list')
         .select('id, title, is_live')
         .order('updated_at', { ascending: false }),
+    ),
+    maybe(
+      supabase
+        .from('published_stories')
+        .select('content')
+        .eq('id', id)
+        .maybeSingle(),
+    ),
+    fetchRevisions(id),
+    call(supabase.from('staff').select('user_id, name')),
+    call(
+      supabase.from('settings').select('require_two_person_review').single(),
     ),
   ])
   if (!story) throw new Error('not_found')
@@ -55,6 +73,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
       title: s.title ?? s.id ?? '',
       isLive: s.is_live ?? false,
     })),
+    live: live?.content ?? null,
+    // a correction line is only for stories that were published before
+    wasPublished: revisions.some((r) => r.action === 'publish'),
+    names: new Map(team.map((m) => [m.user_id, m.name])),
+    twoPersonRule: settings.require_two_person_review,
   }
 }
 
@@ -71,12 +94,15 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
     ? defaultShouldRevalidate
     : false
 
-type Tab = 'edit' | 'preview'
+const TABS = ['edit', 'preview', 'diff', 'history'] as const
+type Tab = (typeof TABS)[number]
 
 function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   const tabs: [Tab, string][] = [
     ['edit', t.tabs.edit],
     ['preview', t.tabs.preview],
+    ['diff', t.tabs.diff],
+    ['history', t.tabs.history],
   ]
   return (
     <div
@@ -132,13 +158,20 @@ function SaveStatus({
   )
 }
 
-function EditorBody({ story, stories }: Data) {
+function EditorBody({
+  story,
+  stories,
+  live: liveContent,
+  wasPublished,
+  names,
+  twoPersonRule,
+}: Data) {
   const staff = useStaff()
   const { channels } = useSite()
   const navigate = useNavigate()
   const { revalidate } = useRevalidator()
   const [params, setParams] = useSearchParams()
-  const tab: Tab = params.get('tab') === 'preview' ? 'preview' : 'edit'
+  const tab: Tab = TABS.find((x) => x === params.get('tab')) ?? 'edit'
   const draft = useStoryDraft(story)
   const { content, dirty, save, saving } = draft
   const title = asText(asObject(content).title) ?? story.id
@@ -178,8 +211,19 @@ function EditorBody({ story, stories }: Data) {
     [content, draft.set, draft.update, channels, stories, story.id],
   )
 
-  const live = stories.find((s) => s.id === story.id)?.isLive ?? false
+  const live = liveContent !== null
   const remove = useAction()
+
+  // After a workflow step or a restore: load the story again (a fresh editor), say what happened.
+  const location = useLocation()
+  const done = (location.state as { done?: WorkflowDone } | null)?.done
+  const afterStep = (step: WorkflowDone) => {
+    clearCache()
+    navigate(
+      { pathname: location.pathname, search: location.search },
+      { replace: true, state: { done: step } },
+    )
+  }
   async function deleteStory() {
     if (!window.confirm(t.deleteConfirm)) return
     if (
@@ -256,6 +300,20 @@ function EditorBody({ story, stories }: Data) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Workflow
+              storyId={story.id}
+              state={draft.saved.state}
+              version={draft.saved.version}
+              updatedBy={draft.saved.updatedBy}
+              staff={staff}
+              dirty={dirty}
+              errorCount={report.errors.length}
+              todoCount={report.todos.length}
+              live={live}
+              wasPublished={wasPublished}
+              twoPersonRule={twoPersonRule}
+              onDone={afterStep}
+            />
             <SaveStatus
               dirty={dirty}
               saving={saving}
@@ -282,6 +340,9 @@ function EditorBody({ story, stories }: Data) {
         </header>
 
         {notice}
+        {done && !dirty && (
+          <Notice tone="success">{adminCopy.workflow.done[done]}</Notice>
+        )}
         {draft.saveError && (
           <Notice tone="error">
             <p>{draft.saveError.message}</p>
@@ -347,8 +408,26 @@ function EditorBody({ story, stories }: Data) {
             </aside>
           </div>
         ) : (
-          <div role="tabpanel" id="panel-preview" aria-labelledby="tab-preview">
-            <StoryPreview content={asPublished(content, today())} />
+          <div
+            role="tabpanel"
+            id={`panel-${tab}`}
+            aria-labelledby={`tab-${tab}`}
+          >
+            {tab === 'preview' && (
+              <StoryPreview content={asPublished(content, today())} />
+            )}
+            {tab === 'diff' && (
+              <DiffView live={liveContent} working={content} dirty={dirty} />
+            )}
+            {tab === 'history' && (
+              <HistoryView
+                storyId={story.id}
+                names={names}
+                version={draft.saved.version}
+                dirty={dirty}
+                onRestored={() => afterStep('restore')}
+              />
+            )}
           </div>
         )}
       </div>
@@ -359,11 +438,5 @@ function EditorBody({ story, stories }: Data) {
 export function Component() {
   const data = useLoaderData() as Data
   // a fresh load of the story (after publishing, or reloading after a conflict) starts over
-  return (
-    <EditorBody
-      key={`${data.story.id}:${data.story.version}`}
-      story={data.story}
-      stories={data.stories}
-    />
-  )
+  return <EditorBody key={`${data.story.id}:${data.story.version}`} {...data} />
 }
