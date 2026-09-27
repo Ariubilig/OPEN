@@ -62,28 +62,35 @@ export function storyHead(
     // `<` escaped so the JSON can never close the script element
     `<script type="application/ld+json">${JSON.stringify(jsonLd).replaceAll('<', '\\u003c')}</script>`,
   ]
-  return template
-    .replace(
+  const replacements: [RegExp, string][] = [
+    [
       /<title>[^<]*<\/title>/,
       `<title>${escapeHtml(`${title} — ${APP_NAME}`)}</title>`,
-    )
-    .replace(
+    ],
+    [
       /<meta name="description" content="[^"]*" \/>/,
       `<meta name="description" content="${escapeHtml(description)}" />`,
-    )
-    .replace(
+    ],
+    [
       /<meta property="og:type" content="[^"]*" \/>/,
       '<meta property="og:type" content="article" />',
-    )
-    .replace(
+    ],
+    [
       /<meta property="og:title" content="[^"]*" \/>/,
       `<meta property="og:title" content="${escapeHtml(title)}" />`,
-    )
-    .replace(
+    ],
+    [
       /<meta property="og:description" content="[^"]*" \/>/,
       `<meta property="og:description" content="${escapeHtml(description)}" />`,
-    )
-    .replace('</head>', `    ${extra.join('\n    ')}\n  </head>`)
+    ],
+    [/<\/head>/, `    ${extra.join('\n    ')}\n  </head>`],
+  ]
+  // a tag that is not in index.html (after an edit there) is a build error, not a silent miss
+  return replacements.reduce((html, [pattern, value]) => {
+    if (!pattern.test(html))
+      throw new Error(`prerender: index.html has no ${pattern.source}`)
+    return html.replace(pattern, value)
+  }, template)
 }
 
 /** The home page's canonical URL and og:url. */

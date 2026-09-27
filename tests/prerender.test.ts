@@ -95,3 +95,15 @@ describe('sitemap, rss, robots', () => {
     expect(robots(null)).not.toContain('Sitemap')
   })
 })
+
+describe('storyHead on a changed template', () => {
+  it('fails loudly when a tag it replaces is missing', () => {
+    expect(() =>
+      storyHead(
+        template.replace(/<meta property="og:title"[^>]*>/, ''),
+        published,
+        SITE,
+      ),
+    ).toThrow(/og:title/)
+  })
+})
