@@ -49,7 +49,7 @@ export default function StoryPreview({ content }: { content: unknown }) {
       <p className="mb-2 text-meta text-muted">{t.note}</p>
       {/* the page as it is on the site: paper background, reading widths, every section */}
       <div className="overflow-hidden rounded-card border border-line bg-paper pb-10">
-        <StoryPage story={story} related={related} />
+        <StoryPage story={story} related={related} preview />
       </div>
     </div>
   )

@@ -4,7 +4,9 @@ import {
   insertIn,
   moveIn,
   removeIn,
+  sameDocument,
   setIn,
+  stableStringify,
   toJsonPath,
 } from '../src/admin/doc'
 
@@ -51,5 +53,15 @@ describe('doc edits', () => {
   it('writes JSON paths like the validators', () => {
     expect(toJsonPath(['meaning', 2, 'source'])).toBe('$.meaning[2].source')
     expect(toJsonPath([])).toBe('$')
+  })
+})
+
+describe('stableStringify', () => {
+  it('ignores key order and undefined values', () => {
+    expect(stableStringify({ b: 1, a: [{ y: 2, x: 1 }], c: undefined })).toBe(
+      '{"a":[{"x":1,"y":2}],"b":1}',
+    )
+    expect(sameDocument({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(true)
+    expect(sameDocument({ a: [1, 2] }, { a: [2, 1] })).toBe(false)
   })
 })

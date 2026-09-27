@@ -158,11 +158,14 @@ function ParticipateButton() {
 export function StoryPage({
   story,
   related,
+  preview = false,
 }: {
   story: StoryData
   related: RelatedItem[]
+  /** inside the admin: the admin page keeps its own title */
+  preview?: boolean
 }) {
-  useDocumentTitle(story.title)
+  useDocumentTitle(preview ? null : story.title)
   const hasTaxRules = useSite().taxRules !== null
   const has = sectionsOf(story, hasTaxRules)
   const navItems = useMemo<NavItem[]>(() => {

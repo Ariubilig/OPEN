@@ -89,6 +89,7 @@ export function TextField({
       error={error}
       optional={base.optional}
       className={base.className}
+      dataPath={toJsonPath(base.path)}
     >
       {(props) =>
         allowUnknown && value === TODO ? (
@@ -144,6 +145,7 @@ export function DateField({
       error={error}
       optional={base.optional}
       className={base.className}
+      dataPath={toJsonPath(base.path)}
     >
       {(props) =>
         allowUnknown && value === TODO ? (
@@ -209,6 +211,7 @@ export function SelectField<V extends string>({
       error={error}
       optional={base.optional}
       className={base.className}
+      dataPath={toJsonPath(base.path)}
     >
       {(props) => (
         <Select
@@ -252,6 +255,7 @@ export function NumberField({
       error={error}
       optional={base.optional}
       className={base.className}
+      dataPath={toJsonPath(base.path)}
     >
       {(props) => (
         <TextInput
@@ -286,7 +290,7 @@ export function CheckboxField({
 }) {
   const error = useFieldError(path)
   return (
-    <div>
+    <div data-path={toJsonPath(path)} className="scroll-mt-24">
       <Checkbox label={label} hint={hint} checked={value} onChange={onChange} />
       {error && (
         <p className="mt-1 text-meta font-semibold text-del-ink">{error}</p>

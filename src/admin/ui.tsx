@@ -66,6 +66,7 @@ export function Field({
   optional = false,
   children,
   className = '',
+  dataPath,
 }: {
   label: ReactNode
   hint?: ReactNode
@@ -73,6 +74,8 @@ export function Field({
   optional?: boolean
   children: (props: ControlProps) => ReactNode
   className?: string
+  /** JSON path of the value: the checks panel finds the field by it */
+  dataPath?: string
 }) {
   const id = useId()
   const hintId = `${id}-hint`
@@ -81,7 +84,10 @@ export function Field({
     [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ') ||
     undefined
   return (
-    <div className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
+    <div
+      data-path={dataPath}
+      className={`flex min-w-0 scroll-mt-24 flex-col gap-1.5 ${className}`}
+    >
       <label htmlFor={id} className="text-small font-semibold">
         {label}
         {optional && (

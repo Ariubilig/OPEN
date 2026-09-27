@@ -9,7 +9,7 @@ the `claude/supabase` branch. Tick the boxes as phases land.
 - [x] Phase 2: seed data and tooling (seed from the existing JSON, generated types, shared validator)
 - [x] Phase 3: public site reads from Supabase
 - [x] Phase 4: admin shell and staff sign-in
-- [ ] Phase 5: story editor
+- [x] Phase 5: story editor
 - [ ] Phase 6: review and publishing workflow
 - [ ] Phase 7: reader error reports and search
 - [ ] Phase 8: SEO and sharing (per-story link previews, sitemap, RSS)

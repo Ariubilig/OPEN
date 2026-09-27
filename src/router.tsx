@@ -61,8 +61,12 @@ export const router = createBrowserRouter([
             children: [
               { index: true, lazy: () => import('./admin/pages/Dashboard') },
               {
+                path: 'stories/new',
+                lazy: () => import('./admin/pages/NewStory'),
+              },
+              {
                 path: 'stories/:id',
-                lazy: () => import('./admin/pages/StoryView'),
+                lazy: () => import('./admin/pages/Editor'),
               },
               {
                 path: 'settings',
