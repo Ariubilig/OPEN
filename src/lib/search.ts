@@ -9,15 +9,32 @@ export function normalize(text: string): string {
     .trim()
 }
 
-const haystacks = new WeakMap<Story, string>()
+/** Feed cards have these fields; a full story adds the optional ones. */
+export type Searchable = Pick<
+  Story,
+  'title' | 'summary' | 'type' | 'stage' | 'topics' | 'timeline'
+> &
+  Partial<
+    Pick<
+      Story,
+      | 'officialTitle'
+      | 'keyNumbers'
+      | 'changes'
+      | 'meaning'
+      | 'positions'
+      | 'affects'
+    >
+  >
+
+const haystacks = new WeakMap<Searchable, string>()
 
 /** Everything a reader might search for in a story, normalized once. */
-function haystack(story: Story): string {
+function haystack(story: Searchable): string {
   const cached = haystacks.get(story)
   if (cached !== undefined) return cached
   const parts = [
     story.title,
-    story.officialTitle.text,
+    story.officialTitle?.text ?? '',
     story.summary.text,
     story.type,
     story.stage,
@@ -32,9 +49,9 @@ function haystack(story: Story): string {
       c.plainBefore.text,
       c.plainAfter.text,
     ]),
-    ...story.meaning.map((m) => m.text),
+    ...(story.meaning ?? []).map((m) => m.text),
     ...(story.positions ?? []).flatMap((p) => [p.actor, p.text]),
-    ...story.affects.flatMap((a) => [a.group, a.text]),
+    ...(story.affects ?? []).flatMap((a) => [a.group, a.text]),
     ...story.timeline.map((t) => t.label),
   ]
   const text = normalize(parts.join(' ').replaceAll(TODO, ' '))
@@ -43,7 +60,7 @@ function haystack(story: Story): string {
 }
 
 /** True when every word of the query appears in the story. An empty query matches everything. */
-export function matchesQuery(story: Story, query: string): boolean {
+export function matchesQuery(story: Searchable, query: string): boolean {
   const terms = normalize(query).split(' ').filter(Boolean)
   if (terms.length === 0) return true
   const text = haystack(story)

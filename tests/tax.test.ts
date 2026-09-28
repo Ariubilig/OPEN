@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { taxRules } from '../src/data'
+import { taxRules } from './fixtures'
 import { computePIT, type Bracket } from '../src/lib/tax'
 
 type Expected = number | 'unverified'
 
-// Monthly salary → monthly tax per year in src/data/taxRules.json.
+// Monthly salary → monthly tax per year in supabase/seed/taxRules.json.
 // Brackets: ХХОАТ-ын тухай хууль 21.1 (legalinfo.mn lawId=14410): the text in force until 2026-12-31
 // ("Өмнөх агуулга"), 21.1.1 for 2027 and 21.1.2 from 2028 — annual amounts divided by 12.
 // Cross-check: the law's own cumulative amounts, e.g. 144 960₮/yr at 24M → 12,080₮/month at 2M.

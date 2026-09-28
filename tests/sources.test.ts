@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getStory, stories } from '../src/data'
+import { getStory, stories } from './fixtures'
 import { numberSources } from '../src/lib/sources'
 
 describe('numberSources', () => {

@@ -6,16 +6,24 @@
   "scripts": {
     "dev": "vite --host",
     "prebuild": "tsx scripts/check.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsx scripts/prerender.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "check": "tsx scripts/check.ts",
     "check:strict": "tsx scripts/check.ts --strict",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:json-schema": "tsx scripts/gen-json-schema.ts",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "db:seed": "tsx scripts/gen-seed.ts",
+    "db:types": "tsx scripts/gen-types.ts"
   },
   "dependencies": {
     "@fontsource-variable/geologica": "^5.3.0",
+    "@supabase/postgrest-js": "^2.117.2",
+    "@supabase/supabase-js": "^2.117.2",
     "diff": "^9.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

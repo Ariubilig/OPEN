@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Secrets (CLAUDE.md rule 14): env files stay local; .env.example is the template
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

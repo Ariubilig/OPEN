@@ -1,7 +1,6 @@
 import { Link } from 'react-router'
 import { copy } from '../copy'
-import { getStory } from '../data'
-import type { Story } from '../data/schema'
+import type { StoryCard } from '../data/api'
 import { toggleFollow, useFollowing } from '../lib/following'
 import { TypeLabel } from './Badge'
 import DataText from './DataText'
@@ -10,7 +9,7 @@ import Icon from './Icon'
 import { NextStep, StageTracker } from './Stage'
 
 /** A followed story: where it is and what comes next, with a button to stop following. */
-function FollowCard({ story }: { story: Story }) {
+function FollowCard({ story }: { story: StoryCard }) {
   return (
     <article
       className={`group relative flex h-full flex-col gap-3 rounded-card border border-line bg-surface p-4 transition-colors hover:border-ink/40 has-[a:focus-visible]:outline-accent lg:p-5 ${FOCUS_RING}`}
@@ -48,10 +47,12 @@ function FollowCard({ story }: { story: Story }) {
 }
 
 /** "Дагаж буй": the stories this reader follows (kept in this browser), newest first. */
-export default function Following() {
+export default function Following({ cards }: { cards: StoryCard[] }) {
+  const byId = new Map(cards.map((c) => [c.id, c]))
+  // a followed story that is no longer published is left out
   const followed = useFollowing()
-    .map((id) => getStory(id))
-    .filter((s): s is Story => s !== undefined)
+    .map((id) => byId.get(id))
+    .filter((s): s is StoryCard => s !== undefined)
   if (followed.length === 0) return null
   return (
     <section aria-labelledby="following-title" className="mt-9 lg:mt-16">

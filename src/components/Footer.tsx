@@ -1,6 +1,6 @@
-import { Link } from 'react-router'
+import { Link, useRouteLoaderData } from 'react-router'
 import { copy } from '../copy'
-import { channels } from '../data'
+import type { SiteData } from '../data/api'
 import { today } from '../lib/format'
 import DataText from './DataText'
 import Icon from './Icon'
@@ -9,7 +9,9 @@ import Wordmark from './Wordmark'
 /** Principle, the official channels we send people to, and who we are (not an official site). */
 export default function Footer() {
   const year = today().slice(0, 4)
-  const linked = channels.filter((c) => c.url !== null)
+  // the root loader's channels; an error page before they loaded shows the footer without them
+  const site = useRouteLoaderData('root') as SiteData | undefined
+  const linked = (site?.channels ?? []).filter((c) => c.url !== null)
   return (
     <footer className="on-ink mt-12 bg-ink text-on-ink md:mt-24">
       <div className="mx-auto max-w-page px-4 pt-7 pb-9 md:px-8 md:pt-12 md:pb-10">

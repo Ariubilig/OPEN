@@ -1,18 +1,21 @@
 import { Link } from 'react-router'
-import { getStory } from '../data'
 import type { Story } from '../data/schema'
 import { TypeLabel } from './Badge'
 import DataText from './DataText'
 import { StageTracker } from './Stage'
 
-export function relatedStories(story: Story): Story[] {
-  return (story.relatedStoryIds ?? [])
-    .map((id) => getStory(id))
-    .filter((s): s is Story => s !== undefined)
-}
+/** What a related-story link shows; a feed card or a full story both have it. */
+export type RelatedItem = Pick<
+  Story,
+  'id' | 'type' | 'title' | 'stage' | 'timeline'
+>
 
 /** Small cards linking to related stories: type, title, and where each one is. */
-export default function RelatedStories({ stories }: { stories: Story[] }) {
+export default function RelatedStories({
+  stories,
+}: {
+  stories: RelatedItem[]
+}) {
   return (
     <ul className="grid gap-2.5 sm:grid-cols-2">
       {stories.map((s) => (

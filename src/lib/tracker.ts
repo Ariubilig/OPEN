@@ -4,7 +4,14 @@ import { daysBetween, formatDate } from './format'
 
 // "Шийдвэрүүд хаана явж байна?" on the feed: every date comes from a story's timeline.
 
-export type TrackerEvent = { story: Story; item: TimelineItem; date: string }
+/** What the tracker reads of a story: feed cards and full stories both have it. */
+export type TrackedStory = Pick<Story, 'id' | 'title' | 'timeline'>
+
+export type TrackerEvent = {
+  story: TrackedStory
+  item: TimelineItem
+  date: string
+}
 
 function dated(item: TimelineItem): item is TimelineItem & { date: string } {
   return item.date !== null && isIsoDate(item.date)
@@ -15,7 +22,7 @@ function dated(item: TimelineItem): item is TimelineItem & { date: string } {
  * Within a date the stories keep feed order.
  */
 export function upcomingByDate(
-  stories: Story[],
+  stories: TrackedStory[],
   now: string,
   maxDates = 3,
 ): { date: string; events: TrackerEvent[] }[] {
@@ -39,7 +46,7 @@ export function upcomingByDate(
  * `now`), newest first — one line per document.
  */
 export function recentEvents(
-  stories: Story[],
+  stories: TrackedStory[],
   now: string,
   limit = 5,
 ): TrackerEvent[] {
@@ -57,8 +64,8 @@ export function recentEvents(
 
 /** Stories whose next step has no date yet, with that step (the budget's next reading, …). */
 export function unscheduledNext(
-  stories: Story[],
-): { story: Story; item: TimelineItem }[] {
+  stories: TrackedStory[],
+): { story: TrackedStory; item: TimelineItem }[] {
   return stories.flatMap((story) => {
     const next = story.timeline.find((t) => t.status === 'upcoming')
     return next && !dated(next) ? [{ story, item: next }] : []

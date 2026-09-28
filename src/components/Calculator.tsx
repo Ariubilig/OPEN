@@ -6,7 +6,8 @@ import {
   type ChangeEvent,
 } from 'react'
 import { copy } from '../copy'
-import { taxRules } from '../data'
+import type { TaxRules } from '../data/schema'
+import { useSite } from '../data/site'
 import { formatMNT, formatThousands } from '../lib/format'
 import { computePIT, type PitResult } from '../lib/tax'
 import Chip from './Chip'
@@ -19,6 +20,12 @@ const DEFAULT_SALARY = 2_000_000
 
 /** Monthly personal income tax now / from 2027 / from 2028 (brief §7), as bars on an ink card. */
 export default function Calculator() {
+  // the story page only shows this section when the tax rules loaded
+  const taxRules = useSite().taxRules
+  return taxRules ? <CalculatorCard taxRules={taxRules} /> : null
+}
+
+function CalculatorCard({ taxRules }: { taxRules: TaxRules }) {
   const [salary, setSalary] = useState<number | null>(DEFAULT_SALARY)
   const inputId = useId()
   const presetsId = useId()

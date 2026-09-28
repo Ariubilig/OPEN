@@ -1,11 +1,72 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
-import { Outlet, useLocation, useNavigationType } from 'react-router'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from 'react'
+import {
+  Outlet,
+  useLocation,
+  useNavigation,
+  useNavigationType,
+} from 'react-router'
 import { copy } from '../copy'
 import Footer from './Footer'
 import Header from './Header'
 
 // We restore scroll ourselves (per history entry), so the browser should not.
 if (typeof history !== 'undefined') history.scrollRestoration = 'manual'
+
+/** Skip link, header, main landmark and footer: every public page, including errors and loading. */
+export function AppShell({
+  children,
+  mainRef,
+}: {
+  children: ReactNode
+  mainRef?: RefObject<HTMLElement | null>
+}) {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-card focus:bg-surface focus:px-4 focus:py-3 focus:text-accent"
+      >
+        {copy.a11y.skipToContent}
+      </a>
+      <Header />
+      <main
+        ref={mainRef}
+        id="main"
+        tabIndex={-1}
+        className="flex-1 focus:outline-none"
+      >
+        {children}
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
+/** While the next page's data loads: a stripe along the top edge (announced to screen readers). */
+export function PendingBar() {
+  const loading = useNavigation().state === 'loading'
+  return (
+    <>
+      <p role="status" className="sr-only">
+        {loading ? copy.loading : ''}
+      </p>
+      {loading && (
+        <div
+          aria-hidden="true"
+          className="pending-bar fixed inset-x-0 top-0 z-50 h-[3px] overflow-hidden"
+        >
+          <span className="block h-full w-1/3 bg-accent" />
+        </div>
+      )}
+    </>
+  )
+}
 
 export default function Layout() {
   const location = useLocation()
@@ -47,23 +108,9 @@ export default function Layout() {
   }, [location.key, location.pathname, navigationType])
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-card focus:bg-surface focus:px-4 focus:py-3 focus:text-accent"
-      >
-        {copy.a11y.skipToContent}
-      </a>
-      <Header />
-      <main
-        ref={mainRef}
-        id="main"
-        tabIndex={-1}
-        className="flex-1 focus:outline-none"
-      >
-        <Outlet />
-      </main>
-      <Footer />
-    </div>
+    <AppShell mainRef={mainRef}>
+      <PendingBar />
+      <Outlet />
+    </AppShell>
   )
 }

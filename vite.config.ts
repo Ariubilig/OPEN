@@ -1,7 +1,8 @@
 /// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type Plugin } from 'vite'
+import { readFileSync } from 'node:fs'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { APP_NAME } from './src/config.ts'
 import { copy } from './src/copy.ts'
 
@@ -48,12 +49,31 @@ function appMeta(): Plugin {
   }
 }
 
-export default defineConfig({
+/**
+ * `vite preview` sends the production security headers (vercel.json), with connect-src also
+ * allowing this build's Supabase URL, so the policy is tried against the real app locally.
+ */
+function previewHeaders(mode: string): Record<string, string> {
+  const vercel = JSON.parse(readFileSync('vercel.json', 'utf8')) as {
+    headers: { source: string; headers: { key: string; value: string }[] }[]
+  }
+  const api = loadEnv(mode, process.cwd(), '').VITE_SUPABASE_URL
+  const origin = api ? new URL(api).origin : ''
+  return Object.fromEntries(
+    vercel.headers[0].headers.map(({ key, value }) => [
+      key,
+      key === 'Content-Security-Policy' && origin
+        ? value.replace('connect-src ', `connect-src ${origin} `)
+        : value,
+    ]),
+  )
+}
+
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), appMeta()],
-  // One bundle on purpose: the site works offline once loaded (stories, zod and React together).
-  build: { chunkSizeWarningLimit: 700 },
+  preview: { headers: previewHeaders(mode) },
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
   },
-})
+}))

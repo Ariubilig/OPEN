@@ -100,14 +100,17 @@ export function isIsoDate(value: string): boolean {
 }
 
 const Todo = z.literal(TODO)
+const DATE_MESSAGE = 'expected a real date as YYYY-MM-DD'
+// the pattern is also what the database's JSON Schema checks; the refinement rejects 2026-02-30
 const IsoDate = z
   .string()
-  .refine(isIsoDate, { message: 'expected a real date as YYYY-MM-DD' })
+  .regex(/^\d{4}-\d{2}-\d{2}$/, { message: DATE_MESSAGE })
+  .refine(isIsoDate, { message: DATE_MESSAGE })
 const IsoDateOrTodo = z.union([Todo, IsoDate])
 const Text = z.string().trim().min(1, { message: 'must not be empty' })
-const HttpsUrl = z
-  .string()
-  .regex(/^https:\/\/\S+$/, { message: 'expected a URL starting with https://' })
+const HttpsUrl = z.string().regex(/^https:\/\/\S+$/, {
+  message: 'expected a URL starting with https://',
+})
 const UrlOrTodo = z.union([Todo, HttpsUrl])
 
 // ---- story parts ----------------------------------------------------------
@@ -213,7 +216,9 @@ export const StorySchema = z.strictObject({
   participate: z.array(ParticipateRefSchema),
   relatedStoryIds: z.array(Text).optional(),
   sources: z.array(SourceSchema).min(1),
-  corrections: z.array(z.strictObject({ date: IsoDate, text: Text })).optional(),
+  corrections: z
+    .array(z.strictObject({ date: IsoDate, text: Text }))
+    .optional(),
   verify: z.array(Text).optional(), // team notes — never rendered
 })
 

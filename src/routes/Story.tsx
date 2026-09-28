@@ -1,37 +1,38 @@
 import { useMemo, type ReactNode } from 'react'
-import { useParams } from 'react-router'
+import { useLoaderData } from 'react-router'
 import AffectsBlock from '../components/AffectsBlock'
 import Calculator from '../components/Calculator'
 import ChangeBlock from '../components/ChangeBlock'
 import DataText from '../components/DataText'
 import EvidenceChain from '../components/EvidenceChain'
+import FollowButton from '../components/FollowButton'
 import Icon from '../components/Icon'
 import KeyNumbers from '../components/KeyNumbers'
 import MeaningBlock from '../components/MeaningBlock'
 import NumberExplainer from '../components/NumberExplainer'
 import ParticipateBlock from '../components/ParticipateBlock'
+import ReportButton from '../components/ReportButton'
 import Positions from '../components/Positions'
-import RelatedStories, { relatedStories } from '../components/RelatedStories'
+import RelatedStories, { type RelatedItem } from '../components/RelatedStories'
 import SectionNav, { goToSection, type NavItem } from '../components/SectionNav'
 import SourceSheetProvider from '../components/SourceSheet'
 import SourcesBlock from '../components/SourcesBlock'
 import StageCard from '../components/StageCard'
 import StoryHeader from '../components/StoryHeader'
 import Timeline from '../components/Timeline'
-import { APP_NAME, REPORT_EMAIL } from '../config'
 import { copy } from '../copy'
-import { getStory } from '../data'
 import type { Story as StoryData } from '../data/schema'
+import { useSite } from '../data/site'
 import { formatDate } from '../lib/format'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
-import NotFound from './NotFound'
+import type { storyLoader } from './loaders'
+import { NotFoundPage } from './NotFound'
 
 export default function Story() {
-  const { id = '' } = useParams()
-  const story = getStory(id)
-  if (!story) return <NotFound />
+  const { story, related, featured } = useLoaderData<typeof storyLoader>()
+  if (!story) return <NotFoundPage featured={featured} />
   // key: a related-story link mounts a fresh page (nav state, open panels)
-  return <StoryPage key={story.id} story={story} />
+  return <StoryPage key={story.id} story={story} related={related} />
 }
 
 type SectionId =
@@ -58,11 +59,14 @@ const ORDER: SectionId[] = [
   'participate',
 ]
 
-/** Which sections this story has data for. */
-function sectionsOf(story: StoryData): Record<SectionId, boolean> {
+/** Which sections this story has data for (the calculator also needs the tax rules). */
+function sectionsOf(
+  story: StoryData,
+  hasTaxRules: boolean,
+): Record<SectionId, boolean> {
   return {
     changes: (story.changes?.length ?? 0) > 0,
-    calculator: story.calculator === 'pit',
+    calculator: story.calculator === 'pit' && hasTaxRules,
     'key-numbers': (story.keyNumbers?.length ?? 0) > 0,
     meaning: story.meaning.length > 0 || (story.positions?.length ?? 0) > 0,
     affects: story.affects.length > 0,
@@ -149,22 +153,35 @@ function ParticipateButton() {
   )
 }
 
-function StoryPage({ story }: { story: StoryData }) {
-  useDocumentTitle(story.title)
-  const has = sectionsOf(story)
+/**
+ * The story page. Also the admin's preview of a working copy, which passes `related` itself.
+ */
+export function StoryPage({
+  story,
+  related,
+  preview = false,
+}: {
+  story: StoryData
+  related: RelatedItem[]
+  /** inside the admin: the admin page keeps its own title */
+  preview?: boolean
+}) {
+  useDocumentTitle(preview ? null : story.title)
+  const hasTaxRules = useSite().taxRules !== null
+  const has = sectionsOf(story, hasTaxRules)
   const navItems = useMemo<NavItem[]>(() => {
-    const present = sectionsOf(story)
+    const present = sectionsOf(story, hasTaxRules)
     return ORDER.filter((id) => present[id]).map((id) => ({
       id,
       label: NAV_LABELS[id],
     }))
-  }, [story])
+  }, [story, hasTaxRules])
   const number = (id: SectionId) => navItems.findIndex((i) => i.id === id) + 1
-  const related = relatedStories(story)
   const summary = (
     <>
       <StageCard story={story} />
       {has.participate && <ParticipateButton />}
+      {!preview && <FollowButton storyId={story.id} />}
     </>
   )
 
@@ -172,7 +189,7 @@ function StoryPage({ story }: { story: StoryData }) {
     <SourceSheetProvider story={story}>
       <article className="mx-auto max-w-page px-4 md:px-8 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-12 xl:grid-cols-[minmax(0,1fr)_392px] xl:gap-x-[72px]">
         <div className="mx-auto w-full max-w-reading min-w-0 lg:max-w-none">
-          <StoryHeader story={story} />
+          <StoryHeader story={story} preview={preview} />
 
           <div className="mt-5 flex flex-col gap-[18px] lg:hidden">
             {summary}
@@ -328,14 +345,7 @@ function StoryPage({ story }: { story: StoryData }) {
               <Icon name="info" className="size-5" />
               {copy.story.disclaimer}
             </p>
-            {REPORT_EMAIL && (
-              <a
-                href={`mailto:${REPORT_EMAIL}?subject=${encodeURIComponent(`${APP_NAME}: ${story.title}`)}`}
-                className="inline-flex min-h-11 items-center text-small font-semibold text-accent underline underline-offset-3"
-              >
-                {copy.story.reportError}
-              </a>
-            )}
+            {!preview && <ReportButton storyId={story.id} />}
           </div>
         </div>
 

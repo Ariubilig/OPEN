@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { stories } from '../src/data'
+import { stories } from './fixtures'
 import { GROUPS } from '../src/data/schema'
-import { groupCounts, parseGroup, storiesFor } from '../src/lib/groups'
+import {
+  affectedGroups,
+  groupCounts,
+  parseGroup,
+  storiesFor,
+} from '../src/lib/groups'
+
+const cards = stories.map((s) => ({ groups: affectedGroups(s) }))
 
 describe('parseGroup', () => {
   it('accepts schema groups only', () => {
@@ -13,7 +20,7 @@ describe('parseGroup', () => {
 
 describe('groupCounts', () => {
   it('lists only groups that some story affects, in schema order', () => {
-    const counts = groupCounts(stories)
+    const counts = groupCounts(cards)
     expect(counts.length).toBeGreaterThan(0)
     expect(counts.every((c) => c.count > 0)).toBe(true)
     const order = counts.map((c) => GROUPS.indexOf(c.group))
@@ -23,7 +30,7 @@ describe('groupCounts', () => {
 
 describe('storiesFor', () => {
   it('returns each story with only the sentences for that group', () => {
-    for (const { group, count } of groupCounts(stories)) {
+    for (const { group, count } of groupCounts(cards)) {
       const found = storiesFor(stories, group)
       expect(found.length).toBe(count)
       for (const { story, affects } of found) {

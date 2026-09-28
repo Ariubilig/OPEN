@@ -244,3 +244,34 @@ html:has(dialog[open]) {
     scroll-behavior: auto !important;
   }
 }
+
+/* Route loading: a short highlighter stripe runs along the top edge while the next page loads.
+   Only after 150ms, so fast loads show nothing; a still, full-width stripe with reduced motion. */
+@keyframes pending-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+@keyframes pending-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.pending-bar {
+  animation: pending-appear 1ms 150ms both;
+}
+.pending-bar > span {
+  animation: pending-slide 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pending-bar > span {
+    width: 100%;
+    animation: none;
+  }
+}

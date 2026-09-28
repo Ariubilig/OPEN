@@ -29,7 +29,14 @@ function BackLink() {
   )
 }
 
-export default function StoryHeader({ story }: { story: Story }) {
+export default function StoryHeader({
+  story,
+  preview = false,
+}: {
+  story: Story
+  /** the admin's preview of a working copy: no follow or share (it is not on the site) */
+  preview?: boolean
+}) {
   const reviewed =
     story.reviewed && story.reviewed.by !== TODO && story.reviewed.date !== TODO
       ? story.reviewed
@@ -88,7 +95,7 @@ export default function StoryHeader({ story }: { story: Story }) {
         )}
       </dl>
 
-      <StoryActions story={story} />
+      {!preview && <StoryActions story={story} />}
     </header>
   )
 }

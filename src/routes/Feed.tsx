@@ -1,5 +1,10 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import {
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router'
 import FeedCard, { FeatureCard, LeadCard } from '../components/FeedCard'
 import { TopicChips, TypeSelect } from '../components/FilterBar'
 import Following from '../components/Following'
@@ -9,7 +14,6 @@ import SearchField from '../components/SearchField'
 import SentenceLines from '../components/SentenceLines'
 import Tracker from '../components/Tracker'
 import { copy } from '../copy'
-import { stories } from '../data'
 import {
   DOC_TYPES,
   TOPICS,
@@ -21,13 +25,7 @@ import { parseGroup } from '../lib/groups'
 import { scrollBehavior } from '../lib/motion'
 import { matchesQuery } from '../lib/search'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
-
-// Filter options: only the types and topics present in the data, in schema order.
-const typeOptions = DOC_TYPES.filter((t) => stories.some((s) => s.type === t))
-const topicOptions = TOPICS.filter((t) =>
-  stories.some((s) => s.topics.includes(t)),
-)
-const featuredStories = stories.filter((s) => s.featured)
+import type { feedLoader } from './loaders'
 
 function pick<T extends string>(
   value: string | null,
@@ -45,6 +43,18 @@ type Filters = {
 
 export default function Feed() {
   useDocumentTitle()
+  const { cards: stories, groupStories } = useLoaderData<typeof feedLoader>()
+  // Filter options: only the types and topics present in the data, in schema order.
+  const { typeOptions, topicOptions, featuredStories } = useMemo(
+    () => ({
+      typeOptions: DOC_TYPES.filter((t) => stories.some((s) => s.type === t)),
+      topicOptions: TOPICS.filter((t) =>
+        stories.some((s) => s.topics.includes(t)),
+      ),
+      featuredStories: stories.filter((s) => s.featured),
+    }),
+    [stories],
+  )
   const [params, setParams] = useSearchParams()
   const type = pick<DocType>(params.get('type'), typeOptions)
   const topic = pick<Topic>(params.get('topic'), topicOptions)
@@ -142,7 +152,7 @@ export default function Feed() {
         </div>
       </section>
 
-      {!filtered && <Following />}
+      {!filtered && <Following cards={stories} />}
 
       {!filtered && lead && (
         <section aria-labelledby="featured-title" className="mt-9 lg:mt-16">
@@ -167,7 +177,14 @@ export default function Feed() {
 
       {!filtered && <Tracker stories={stories} />}
 
-      {!filtered && <ForYou group={group} onSelect={setGroup} />}
+      {!filtered && (
+        <ForYou
+          cards={stories}
+          group={group}
+          stories={groupStories}
+          onSelect={setGroup}
+        />
+      )}
 
       <section aria-labelledby="all-title" className="mt-10 lg:mt-[72px]">
         <div ref={barRef} className="flex flex-col gap-3.5 lg:gap-[18px]">

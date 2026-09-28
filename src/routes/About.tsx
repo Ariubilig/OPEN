@@ -4,7 +4,7 @@ import NumberTag from '../components/NumberTag'
 import { ChannelCard } from '../components/ParticipateBlock'
 import SentenceLines from '../components/SentenceLines'
 import { copy } from '../copy'
-import { channels } from '../data'
+import { useSite } from '../data/site'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 type Actor = (typeof copy.about.steps)[number]['actor']
@@ -56,6 +56,7 @@ function DataSource({ line }: { line: string }) {
 
 export default function About() {
   useDocumentTitle(copy.about.title)
+  const { channels } = useSite()
   const steps = copy.about.steps
   return (
     <div className="mx-auto max-w-page px-4 pt-8 md:px-8 md:pt-[72px]">

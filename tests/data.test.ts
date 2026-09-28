@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { channels, getChannel, getStory, stories, taxRules } from '../src/data'
 import { CHANNEL_IDS } from '../src/data/schema'
-
-// Every story file, templates included, read raw (no validation, no filtering).
-const rawFiles = Object.entries(
-  import.meta.glob<{ id: string; draft?: boolean }>(
-    '../src/data/stories/*.json',
-    { eager: true, import: 'default' },
-  ),
-).map(([path, json]) => ({ file: path.split('/').pop()!, json }))
+import {
+  channels,
+  getChannel,
+  getStory,
+  rawStoryFiles as rawFiles,
+  stories,
+  taxRules,
+} from './fixtures'
 
 describe('data', () => {
-  it('loads every story through src/data/index.ts without zod errors', () => {
+  it('parses every seed story without zod errors', () => {
     const expected = rawFiles.filter(
       (f) => !f.file.startsWith('_') && f.json.draft !== true,
     )

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { stories } from '../src/data'
+import { stories } from './fixtures'
 import type { Story, TimelineItem } from '../src/data/schema'
 import {
   ago,

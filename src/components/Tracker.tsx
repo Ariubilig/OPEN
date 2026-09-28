@@ -1,6 +1,5 @@
 import { Link } from 'react-router'
 import { copy } from '../copy'
-import type { Story } from '../data/schema'
 import { daysBetween, formatDate, today } from '../lib/format'
 import { countdown } from '../lib/timeline'
 import {
@@ -8,6 +7,7 @@ import {
   recentEvents,
   unscheduledNext,
   upcomingByDate,
+  type TrackedStory,
   type TrackerEvent,
 } from '../lib/tracker'
 import DataText from './DataText'
@@ -80,7 +80,7 @@ function EventLink({
  * "Шийдвэрүүд хаана явж байна?": the next dated steps of every document with a day count,
  * and the latest step each document took. Every date comes from the story timelines.
  */
-export default function Tracker({ stories }: { stories: Story[] }) {
+export default function Tracker({ stories }: { stories: TrackedStory[] }) {
   const now = today()
   const upcoming = upcomingByDate(stories, now)
   const unscheduled = unscheduledNext(stories)
