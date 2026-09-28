@@ -6,6 +6,7 @@ import { BadgeRow } from './Badge'
 import CitedText from './CitedText'
 import DataText from './DataText'
 import Icon from './Icon'
+import StoryActions from './StoryActions'
 
 function BackLink() {
   const navigate = useNavigate()
@@ -28,7 +29,14 @@ function BackLink() {
   )
 }
 
-export default function StoryHeader({ story }: { story: Story }) {
+export default function StoryHeader({
+  story,
+  preview = false,
+}: {
+  story: Story
+  /** the admin's preview of a working copy: no follow or share (it is not on the site) */
+  preview?: boolean
+}) {
   const reviewed =
     story.reviewed && story.reviewed.by !== TODO && story.reviewed.date !== TODO
       ? story.reviewed
@@ -50,18 +58,21 @@ export default function StoryHeader({ story }: { story: Story }) {
         <CitedText cited={story.summary} />
       </p>
 
-      <details className="group border-y border-line">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-small font-semibold text-ink-2 [&::-webkit-details-marker]:hidden">
-          {copy.story.officialTitle}
-          <Icon
-            name="chevronDown"
-            className="size-[18px] text-muted transition-transform group-open:rotate-180"
-          />
-        </summary>
-        <p className="mb-3.5 text-small leading-[21px] text-ink-2">
-          <CitedText cited={story.officialTitle} />
-        </p>
-      </details>
+      {/* no official title yet: no empty disclosure */}
+      {story.officialTitle.text !== TODO && (
+        <details className="group border-y border-line">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-small font-semibold text-ink-2 [&::-webkit-details-marker]:hidden">
+            {copy.story.officialTitle}
+            <Icon
+              name="chevronDown"
+              className="size-[18px] text-muted transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <p className="mb-3.5 text-small leading-[21px] text-ink-2">
+            <CitedText cited={story.officialTitle} />
+          </p>
+        </details>
+      )}
 
       <dl className="-mt-1 flex flex-wrap gap-x-5 gap-y-1 text-meta text-muted tabular-nums">
         <div className="flex gap-1">
@@ -83,6 +94,8 @@ export default function StoryHeader({ story }: { story: Story }) {
           </div>
         )}
       </dl>
+
+      {!preview && <StoryActions story={story} />}
     </header>
   )
 }

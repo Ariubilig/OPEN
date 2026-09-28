@@ -189,7 +189,7 @@ export function StoryPage({
     <SourceSheetProvider story={story}>
       <article className="mx-auto max-w-page px-4 md:px-8 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-12 xl:grid-cols-[minmax(0,1fr)_392px] xl:gap-x-[72px]">
         <div className="mx-auto w-full max-w-reading min-w-0 lg:max-w-none">
-          <StoryHeader story={story} />
+          <StoryHeader story={story} preview={preview} />
 
           <div className="mt-5 flex flex-col gap-[18px] lg:hidden">
             {summary}

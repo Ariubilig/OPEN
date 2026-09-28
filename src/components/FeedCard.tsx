@@ -8,9 +8,9 @@ import Icon from './Icon'
 import { NextStep, StageTracker } from './Stage'
 
 // Every card is one link: the title link is stretched over the whole card.
-const STRETCH =
+export const STRETCH =
   "after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] focus-visible:outline-none"
-const FOCUS_RING =
+export const FOCUS_RING =
   'has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2'
 
 function TypeAndStage({

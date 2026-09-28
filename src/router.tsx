@@ -8,7 +8,7 @@ import {
   notFoundLoader,
   rootLoader,
   rootShouldRevalidate,
-  searchLoader,
+  searchRedirect,
   storyLoader,
   storyShouldRevalidate,
 } from './routes/loaders'
@@ -52,13 +52,8 @@ export const router = createBrowserRouter([
                   Component: (await import('./routes/About')).default,
                 }),
               },
-              {
-                path: 'search',
-                loader: searchLoader,
-                lazy: async () => ({
-                  Component: (await import('./routes/Search')).default,
-                }),
-              },
+              // search lives in the feed now; old /search?q= links still work
+              { path: 'search', loader: searchRedirect },
               // the pages the alert emails link to
               {
                 path: 'alerts/confirm',

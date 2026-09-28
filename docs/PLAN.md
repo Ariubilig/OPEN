@@ -296,6 +296,25 @@ function `build-and-plan` (v16, 2026-05-30) and an `OPENROUTER_API_KEY` secret f
 Waiting for the owner's decision: restore it and deploy next to (or instead of) that app, or use
 a new empty project.
 
+### Merged with main (PR #2, "Speak as the product")
+
+`main` gained, in parallel, a product voice, a feed search, a browser-only follow list, a share
+button and the "Шийдвэрүүд хаана явж байна?" tracker, all reading the old bundled stories. The
+merge keeps all of them on the database:
+
+- Search: main's search box in the feed, filtering the published cards the feed already loads
+  (amounts match with or without separators). The former `/search` page redirects to `/?q=`.
+  `search_stories()` stays in the database for when the list outgrows one feed request.
+- Follow: both kinds stay. "Дагах" keeps a story in this browser's "Дагаж буй" list;
+  "Шат өөрчлөгдөхөд мэдэгдэл авах" sends an email when its stage changes. Neither shows in the
+  admin preview.
+- Tracker and follow list read the feed's `story_cards` (they need only id, title, type, stage
+  and timeline).
+- Main's wording wins for the footer ("бие даасан иргэний мэдээллийн платформ"), the placeholder
+  ("Баталгаажуулж байна", also in emails) and the About labels (Автомат / AI / Редактор /
+  Иргэн); the About step texts say what the system really does. CLAUDE.md: main's rule 13
+  (product voice) is kept; the database and generated-file rules are now 14 and 15.
+
 ## 6. Project rule changes (CLAUDE.md)
 
 - Rule 1: admin labels live in `src/admin/copy.ts` (lazy chunk), public labels in `src/copy.ts`.

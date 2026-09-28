@@ -7,7 +7,9 @@ it is based on (every sentence links to its source), where the document is in it
 how a citizen can respond through an official channel (D-Parliament, legalinfo.mn, E-Mongolia,
 public petition). It started at the Open Parliament Hackathon 2026.
 
-> **Энэ бол УИХ-ын албан ёсны сайт биш.** This is not an official site of the State Great Khural.
+> **Тод бол бие даасан иргэний мэдээллийн платформ. УИХ, Засгийн газрын албан ёсны сайт биш.**
+> Tod is an independent civic information platform, not an official site of the State Great
+> Khural or the Government.
 
 Project rules for anyone (or any AI) editing the code: [CLAUDE.md](CLAUDE.md). The plan and the
 decisions behind it: [docs/PLAN.md](docs/PLAN.md).
@@ -16,7 +18,11 @@ decisions behind it: [docs/PLAN.md](docs/PLAN.md).
 
 - **Site** (`src/`): React single-page app. It reads published stories from Supabase with the
   public key; `scripts/prerender.ts` writes a page per story after the build, so shared links get
-  a title and a preview. Readers can search, report an error, and follow a story by email.
+  a title and a preview. Readers can search (in the feed, `?q=`), follow a document in this
+  browser ("Дагах", localStorage) or by email when its stage changes, share a story, and report
+  an error. "Шийдвэрүүд хаана явж байна?" on the feed lists the next dates and latest steps of
+  every document, computed from the story timelines — nothing on the site is invented to look
+  busy (CLAUDE.md rule 13).
 - **Admin** (`/admin`, a separate chunk readers never download): staff sign in with a code sent
   by email. Editors write stories in forms with live checks; a second person publishes (the
   two-person rule); every change is a revision. Also: readers' error reports, AI draft, the
@@ -140,6 +146,16 @@ build needs network access.
   `vercel.json`).
 
 The site talks only to the Supabase API: fonts are bundled, no analytics, no CDNs.
+
+## Before launch
+
+- [ ] In the admin, fill every `TODO_VERIFY` and resolve every reviewer note in the stories
+      (the **Шалгалт** panel lists both), then publish them (two people).
+- [ ] Re-check the budget bills' current stage on d.parliament.mn and update the stage and
+      timeline of the budget story.
+- [ ] Check the tax brackets in the law and mark the tax rules as verified (**Тохиргоо**).
+- [ ] Replace the E-Mongolia and petition links with the exact pages (**Тохиргоо → Албан ёсны
+      сувгууд**).
 
 ## Change the name
 

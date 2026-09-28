@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Secrets (CLAUDE.md rule 13): env files stay local; .env.example is the template
+# Secrets (CLAUDE.md rule 14): env files stay local; .env.example is the template
 .env
 .env.*
 !.env.example

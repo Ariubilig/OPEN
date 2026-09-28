@@ -6,6 +6,7 @@ import {
   storyHead,
   type PublishedStory,
 } from '../scripts/prerender-lib'
+import { copy } from '../src/copy'
 import { TODO } from '../src/data/schema'
 import { getStory } from './fixtures'
 
@@ -75,7 +76,7 @@ describe('storyHead', () => {
       SITE,
     )
     expect(html2).not.toContain(TODO)
-    expect(html2).toContain('Хууль Баталгаажуулах')
+    expect(html2).toContain(`Хууль ${copy.placeholder}`)
   })
 })
 

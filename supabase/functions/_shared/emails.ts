@@ -2,7 +2,8 @@
 // Every fact in them comes from the database: the story's title and stages, never written here.
 
 const TODO = 'TODO_VERIFY'
-const PLACEHOLDER = 'Баталгаажуулах'
+// the same label as the site's placeholder (src/copy.ts)
+const PLACEHOLDER = 'Баталгаажуулж байна'
 
 export const emailCopy = {
   notOfficial: 'Энэ бол УИХ-ын албан ёсны сайт биш.',

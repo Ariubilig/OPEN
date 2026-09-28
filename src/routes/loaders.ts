@@ -1,5 +1,9 @@
 // Route loaders: each page's data is fetched before the page renders (React Router data mode).
-import type { LoaderFunctionArgs, ShouldRevalidateFunction } from 'react-router'
+import {
+  redirect,
+  type LoaderFunctionArgs,
+  type ShouldRevalidateFunction,
+} from 'react-router'
 import {
   fetchCards,
   fetchCardsByIds,
@@ -7,7 +11,6 @@ import {
   fetchSite,
   fetchStoriesForGroup,
   fetchStory,
-  searchCards,
 } from '../data/api'
 import { parseGroup } from '../lib/groups'
 
@@ -54,9 +57,10 @@ export const storyShouldRevalidate: ShouldRevalidateFunction = ({
 }) =>
   currentUrl.pathname !== nextUrl.pathname ? defaultShouldRevalidate : false
 
-export async function searchLoader({ request }: LoaderFunctionArgs) {
+/** The former search page: search is part of the feed (`/?q=`). */
+export function searchRedirect({ request }: LoaderFunctionArgs) {
   const query = (new URL(request.url).searchParams.get('q') ?? '').trim()
-  return { query, cards: query ? await searchCards(query) : [] }
+  return redirect(query ? `/?${new URLSearchParams({ q: query })}` : '/')
 }
 
 export async function notFoundLoader() {
