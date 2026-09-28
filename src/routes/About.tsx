@@ -9,12 +9,11 @@ import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 type StepStatus = (typeof copy.about.steps)[number]['status']
 
-// How far each pipeline step is built in the demo — shown honestly next to the step.
+// How each pipeline step is done (the team, the system, an AI tool) — shown next to the step.
 const STATUS_STYLES: Record<StepStatus, string> = {
   built: 'bg-ins-bg text-ins-ink',
   prepared: 'bg-accent-soft text-accent-strong',
   manual: 'bg-paper text-ink shadow-[inset_0_0_0_1px_var(--line-strong)]',
-  next: 'border border-dashed border-muted text-muted',
 }
 
 function Block({
@@ -96,11 +95,7 @@ export default function About() {
               )}
               <span
                 aria-hidden="true"
-                className={`relative flex size-8 items-center justify-center rounded-full text-meta font-extrabold tabular-nums ${
-                  step.status === 'next'
-                    ? 'border-2 border-dashed border-on-ink-3 bg-surface text-muted'
-                    : 'bg-ink text-highlight'
-                }`}
+                className="relative flex size-8 items-center justify-center rounded-full bg-ink text-meta font-extrabold text-highlight tabular-nums"
               >
                 {i + 1}
               </span>
@@ -115,7 +110,7 @@ export default function About() {
               <p
                 className={`col-start-2 mt-2.5 inline-flex h-7 items-center self-start justify-self-start rounded-full px-3 text-meta font-bold whitespace-nowrap md:col-start-3 md:row-start-1 md:mt-0.5 ${STATUS_STYLES[step.status]}`}
               >
-                {step.demo}
+                {step.label}
               </p>
             </li>
           ))}

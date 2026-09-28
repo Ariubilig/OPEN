@@ -13,4 +13,4 @@
 11. Code style: TypeScript strict. Prettier: `{ "semi": false, "singleQuote": true, "tabWidth": 2, "trailingComma": "all" }`.
 12. Stories live in the database and are edited in `/admin`. Seed JSON in `supabase/seed/` is edited by hand: one story per file, readable formatting, never reformat data files you are not changing.
 13. Database: migrations in `supabase/migrations/` are append-only once pushed; row-level security on every table; editorial writes go only through `security definer` functions that check the role and write a revision; the service-role key never reaches the browser; secrets never enter git.
-14. Generated files are regenerated, never edited by hand: `src/data/database.types.ts` (`npm run db:types`), `supabase/seed.sql` (`npm run db:seed`), the JSON Schema migration and `supabase/functions/_shared/story-schema.json` (`npm run db:json-schema`).
+14. Generated files are regenerated, never edited by hand: `src/data/database.types.ts` (`npm run db:types`), `supabase/seed.sql` and `supabase/bootstrap.sql` (`npm run db:seed`), the JSON Schema migration and `supabase/functions/_shared/story-schema.json` (`npm run db:json-schema`).

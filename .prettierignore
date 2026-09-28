@@ -7,5 +7,6 @@ package-lock.json
 # generated
 src/data/database.types.ts
 supabase/seed.sql
+supabase/bootstrap.sql
 supabase/migrations/*_json_schemas.sql
 supabase/functions/_shared/story-schema.json

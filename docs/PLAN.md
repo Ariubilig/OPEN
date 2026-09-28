@@ -288,6 +288,14 @@ Done when: `supabase db reset` and `supabase test db` pass.
   redirect URLs, email templates), settings row (site URL, functions URL), first admin account.
 - Web app: env vars on the static host, build, smoke test.
 
+Status (2026-09-28): everything that does not touch the project is ready — README "Deploy"
+lists the steps, `supabase/bootstrap.sql` holds the first data (channels, tax rules, the stories
+as drafts; no test accounts). Read-only inspection of "Hackathon" (`kgjdvzuprtvlxfitljln`):
+the project is **paused** (INACTIVE), so its database could not be read; it already has an edge
+function `build-and-plan` (v16, 2026-05-30) and an `OPENROUTER_API_KEY` secret from another app.
+Waiting for the owner's decision: restore it and deploy next to (or instead of) that app, or use
+a new empty project.
+
 ## 6. Project rule changes (CLAUDE.md)
 
 - Rule 1: admin labels live in `src/admin/copy.ts` (lazy chunk), public labels in `src/copy.ts`.
