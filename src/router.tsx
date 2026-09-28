@@ -97,6 +97,7 @@ export const router = createBrowserRouter([
                 lazy: () => import('./admin/pages/Editor'),
               },
               { path: 'reports', lazy: () => import('./admin/pages/Reports') },
+              { path: 'ai', lazy: () => import('./admin/pages/AiDraft') },
               {
                 path: 'settings',
                 lazy: () => import('./admin/pages/Settings'),

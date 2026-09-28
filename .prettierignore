@@ -8,3 +8,4 @@ package-lock.json
 src/data/database.types.ts
 supabase/seed.sql
 supabase/migrations/*_json_schemas.sql
+supabase/functions/_shared/story-schema.json

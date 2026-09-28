@@ -14,7 +14,7 @@ the `claude/supabase` branch. Tick the boxes as phases land.
 - [x] Phase 7: reader error reports and search
 - [x] Phase 8: SEO and sharing (per-story link previews, sitemap, RSS)
 - [x] Phase 9: email alerts when a story's stage changes
-- [ ] Phase 10: AI draft with Claude
+- [x] Phase 10: AI draft with Claude
 - [ ] Phase 11: document watcher
 - [ ] Phase 12: deploy to the Supabase project "Hackathon"
 
@@ -261,6 +261,11 @@ Done when: `supabase db reset` and `supabase test db` pass.
   that source, unknown values as `TODO_VERIFY`, and a reviewer note on every generated sentence.
   Saved as a draft with action `ai_draft`. Without `ANTHROPIC_API_KEY` it answers "not configured".
 - Admin page "AI ноорог".
+- Built as a background job (`ai_drafts` table, `EdgeRuntime.waitUntil`): the function answers
+  202 at once and the admin polls, since a draft can outlast a request. Model `claude-opus-5`
+  (`ANTHROPIC_MODEL`), adaptive thinking, effort `high` (`ANTHROPIC_EFFORT`), structured output
+  against the story schema (citations limited to the document or `TODO_VERIFY`), server-side
+  refusal fallbacks (`fallbacks: "default"`). Jobs still running after 15 minutes are marked failed.
 
 ### Phase 11 — document watcher
 

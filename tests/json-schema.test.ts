@@ -5,6 +5,7 @@ import {
   schemaFromMigration,
   type SchemaName,
 } from '../scripts/json-schemas'
+import functionsSchema from '../supabase/functions/_shared/story-schema.json'
 
 const migrations = import.meta.glob<string>('../supabase/migrations/*.sql', {
   query: '?raw',
@@ -29,6 +30,11 @@ describe('database JSON Schemas', () => {
       expect(schemaFromMigration(latest!, name)).toEqual(jsonSchemas[name])
     },
   )
+
+  // The edge functions' copy (the AI draft's schema); same command regenerates it.
+  it('story-schema.json matches the zod contract', () => {
+    expect(functionsSchema).toEqual(jsonSchemas.story)
+  })
 
   it('checks the date format the zod refinement relies on', () => {
     const text = JSON.stringify(jsonSchemas.story)

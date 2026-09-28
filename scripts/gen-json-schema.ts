@@ -1,4 +1,5 @@
-// Writes the JSON Schema migration from the zod contract. Run: npm run db:json-schema
+// Writes the JSON Schema migration from the zod contract, and the story schema as JSON for the
+// edge functions (supabase/functions/_shared/story-schema.json). Run: npm run db:json-schema
 //
 // Migrations are append-only once pushed, so a changed contract gets a new migration file.
 // `--replace` rewrites the newest generated migration in place instead (only for one that has
@@ -6,7 +7,20 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { GENERATED_MARKER, jsonSchemaMigration } from './json-schemas.ts'
+import {
+  GENERATED_MARKER,
+  jsonSchemaMigration,
+  jsonSchemas,
+} from './json-schemas.ts'
+
+const FUNCTIONS_SCHEMA = fileURLToPath(
+  new URL('../supabase/functions/_shared/story-schema.json', import.meta.url),
+)
+writeFileSync(
+  FUNCTIONS_SCHEMA,
+  JSON.stringify(jsonSchemas.story, null, 2) + '\n',
+)
+console.log('wrote supabase/functions/_shared/story-schema.json')
 
 const MIGRATIONS = fileURLToPath(
   new URL('../supabase/migrations/', import.meta.url),

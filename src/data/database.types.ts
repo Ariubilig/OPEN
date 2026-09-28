@@ -11,6 +11,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_drafts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_chars: number
+          error: string | null
+          finished_at: string | null
+          id: number
+          input: Json
+          model: string | null
+          status: string
+          story_id: string
+          usage: Json | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_chars: number
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          input: Json
+          model?: string | null
+          status?: string
+          story_id: string
+          usage?: Json | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_chars?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          input?: Json
+          model?: string | null
+          status?: string
+          story_id?: string
+          usage?: Json | null
+        }
+        Relationships: []
+      }
       channels: {
         Row: {
           content: Json
@@ -565,6 +607,7 @@ export type Database = {
         }
       }
       delete_story: { Args: { p_id: string }; Returns: undefined }
+      expire_ai_drafts: { Args: never; Returns: undefined }
       finish_email: {
         Args: { p_error?: string; p_id: number; p_status: string }
         Returns: undefined
