@@ -68,6 +68,30 @@ function Line({ kind, line }: { kind: Block['kind']; line: string }) {
   )
 }
 
+/** A line diff with its legend: long unchanged stretches folded to a few lines of context. */
+export function LineDiff({ blocks }: { blocks: Block[] }) {
+  return (
+    <>
+      <div className="flex gap-4 text-meta font-semibold">
+        <span className="rounded bg-ins-bg px-2 text-ins-ink">+ {t.added}</span>
+        <span className="rounded bg-del-bg px-2 text-del-ink">
+          − {t.removed}
+        </span>
+      </div>
+      <div className="overflow-x-auto rounded-card border border-line bg-surface py-2 font-mono text-[13px] leading-5">
+        {blocks.map((block, i) => (
+          <BlockLines
+            key={i}
+            block={block}
+            first={i === 0}
+            last={i === blocks.length - 1}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
 export default function DiffView({
   live,
   working,
@@ -91,22 +115,7 @@ export default function DiffView({
       <p className="text-small text-ink-2">
         {t.intro} {dirty && t.unsaved}
       </p>
-      <div className="flex gap-4 text-meta font-semibold">
-        <span className="rounded bg-ins-bg px-2 text-ins-ink">+ {t.added}</span>
-        <span className="rounded bg-del-bg px-2 text-del-ink">
-          − {t.removed}
-        </span>
-      </div>
-      <div className="overflow-x-auto rounded-card border border-line bg-surface py-2 font-mono text-[13px] leading-5">
-        {blocks.map((block, i) => (
-          <BlockLines
-            key={i}
-            block={block}
-            first={i === 0}
-            last={i === blocks.length - 1}
-          />
-        ))}
-      </div>
+      <LineDiff blocks={blocks} />
     </div>
   )
 }

@@ -19,7 +19,7 @@ const STATES: StoryState[] = [
 ]
 
 export async function loader() {
-  const [rows, reports] = await Promise.all([
+  const [rows, reports, changes] = await Promise.all([
     call(
       supabase
         .from('story_admin_list')
@@ -32,8 +32,16 @@ export async function loader() {
       .from('reports')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'new'),
+    supabase
+      .from('watch_events')
+      .select('id', { count: 'exact', head: true })
+      .is('seen_at', null),
   ])
-  return { rows, newReports: reports.count ?? 0 }
+  return {
+    rows,
+    newReports: reports.count ?? 0,
+    newChanges: changes.count ?? 0,
+  }
 }
 
 type Row = Awaited<ReturnType<typeof loader>>['rows'][number]
@@ -99,7 +107,7 @@ function StoryRow({ row }: { row: Row }) {
 
 export function Component() {
   useDocumentTitle(`${t.title} · ${adminCopy.title}`)
-  const { rows, newReports } = useLoaderData() as Awaited<
+  const { rows, newReports, newChanges } = useLoaderData() as Awaited<
     ReturnType<typeof loader>
   >
   const [params, setParams] = useSearchParams()
@@ -162,6 +170,16 @@ export function Component() {
         >
           <Icon name="flag" className="size-4" />
           {adminCopy.reports.newCount(newReports)}
+          <Icon name="arrowRight" className="size-4" />
+        </Link>
+      )}
+      {newChanges > 0 && (
+        <Link
+          to="/admin/watch"
+          className="flex min-h-11 items-center gap-2 self-start rounded-xl border border-placeholder-line bg-placeholder-bg px-4 py-2 text-small font-semibold text-placeholder-ink"
+        >
+          <Icon name="document" className="size-4" />
+          {adminCopy.watch.newCount(newChanges)}
           <Icon name="arrowRight" className="size-4" />
         </Link>
       )}

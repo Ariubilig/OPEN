@@ -463,6 +463,107 @@ export type Database = {
         }
         Relationships: []
       }
+      watch_events: {
+        Row: {
+          detected_at: string
+          document_id: number
+          id: number
+          new_text: string | null
+          old_text: string | null
+          seen_at: string | null
+          seen_by: string | null
+        }
+        Insert: {
+          detected_at?: string
+          document_id: number
+          id?: never
+          new_text?: string | null
+          old_text?: string | null
+          seen_at?: string | null
+          seen_by?: string | null
+        }
+        Update: {
+          detected_at?: string
+          document_id?: number
+          id?: never
+          new_text?: string | null
+          old_text?: string | null
+          seen_at?: string | null
+          seen_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "watched_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watched_documents: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: number
+          label: string
+          last_changed_at: string | null
+          last_checked_at: string | null
+          last_error: string | null
+          last_hash: string | null
+          last_status: string | null
+          last_text: string | null
+          story_id: string | null
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: never
+          label: string
+          last_changed_at?: string | null
+          last_checked_at?: string | null
+          last_error?: string | null
+          last_hash?: string | null
+          last_status?: string | null
+          last_text?: string | null
+          story_id?: string | null
+          url: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: never
+          label?: string
+          last_changed_at?: string | null
+          last_checked_at?: string | null
+          last_error?: string | null
+          last_hash?: string | null
+          last_status?: string | null
+          last_text?: string | null
+          story_id?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watched_documents_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watched_documents_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "story_admin_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       story_admin_list: {
@@ -568,6 +669,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      add_watched_document: {
+        Args: { p_label: string; p_story_id?: string; p_url: string }
+        Returns: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: number
+          label: string
+          last_changed_at: string | null
+          last_checked_at: string | null
+          last_error: string | null
+          last_hash: string | null
+          last_status: string | null
+          last_text: string | null
+          story_id: string | null
+          url: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "watched_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       claim_emails: {
         Args: { p_limit?: number }
         Returns: {
@@ -577,6 +702,13 @@ export type Database = {
           site_url: string
           template: string
           to_email: string
+        }[]
+      }
+      claim_watched_documents: {
+        Args: { p_ids?: number[]; p_limit?: number; p_min_age: string }
+        Returns: {
+          id: number
+          url: string
         }[]
       }
       confirm_subscription: { Args: { p_token: string }; Returns: Json }
@@ -626,6 +758,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      mark_watch_events_seen: { Args: { p_ids: number[] }; Returns: number }
       publish_story: {
         Args: {
           p_correction?: string
@@ -656,7 +789,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_watch_result: {
+        Args: { p_error?: string; p_hash: string; p_id: number; p_text: string }
+        Returns: string
+      }
       remove_staff: { Args: { p_user_id: string }; Returns: undefined }
+      remove_watched_document: { Args: { p_id: number }; Returns: undefined }
       request_changes: {
         Args: { p_id: string; p_note: string; p_version: number }
         Returns: {
@@ -832,6 +970,35 @@ export type Database = {
         Returns: boolean
       }
       update_my_name: { Args: { p_name: string }; Returns: undefined }
+      update_watched_document: {
+        Args: {
+          p_active: boolean
+          p_id: number
+          p_label: string
+          p_story_id: string
+        }
+        Returns: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: number
+          label: string
+          last_changed_at: string | null
+          last_checked_at: string | null
+          last_error: string | null
+          last_hash: string | null
+          last_status: string | null
+          last_text: string | null
+          story_id: string | null
+          url: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "watched_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       revision_action:

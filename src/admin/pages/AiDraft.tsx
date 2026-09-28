@@ -2,7 +2,7 @@
 // draft story from it in the background. The page lists recent jobs and refreshes while one runs.
 import { isAuthApiError } from '@supabase/supabase-js'
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useLoaderData, useRevalidator } from 'react-router'
+import { Link, useLoaderData, useLocation, useRevalidator } from 'react-router'
 import { DOC_TYPES, STAGES, type DocType, type Stage } from '../../data/schema'
 import { formatDateTime, formatThousands } from '../../lib/format'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
@@ -41,6 +41,8 @@ export async function loader() {
 }
 
 type Data = Awaited<ReturnType<typeof loader>>
+/** Router state from the document watcher: a changed page to draft from. */
+type DraftFrom = { title: string; url: string; text: string }
 type Job = Data['jobs'][number]
 
 /** Why a job failed, in Mongolian: 'anthropic_429: …' → its text; unknown ones keep the detail. */
@@ -103,16 +105,18 @@ export function Component() {
   useDocumentTitle(`${t.title} · ${adminCopy.title}`)
   const data = useLoaderData() as Data
   const { revalidate } = useRevalidator()
+  const from = (useLocation().state as { draftFrom?: DraftFrom } | null)
+    ?.draftFrom
 
   const [id, setId] = useState('')
   const [type, setType] = useState<DocType>('Хуулийн төсөл')
   const [stage, setStage] = useState<Stage>('Өргөн мэдүүлсэн')
-  const [sourceTitle, setSourceTitle] = useState('')
+  const [sourceTitle, setSourceTitle] = useState(from?.title ?? '')
   const [publisher, setPublisher] = useState('')
-  const [url, setUrl] = useState('')
+  const [url, setUrl] = useState(from?.url ?? '')
   const [publishedAt, setPublishedAt] = useState('')
   const [kind, setKind] = useState<'official' | 'media'>('official')
-  const [documentText, setDocumentText] = useState('')
+  const [documentText, setDocumentText] = useState(from?.text ?? '')
   const [instructions, setInstructions] = useState('')
   const [jobId, setJobId] = useState<number | null>(null)
   const start = useAction()

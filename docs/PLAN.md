@@ -15,7 +15,7 @@ the `claude/supabase` branch. Tick the boxes as phases land.
 - [x] Phase 8: SEO and sharing (per-story link previews, sitemap, RSS)
 - [x] Phase 9: email alerts when a story's stage changes
 - [x] Phase 10: AI draft with Claude
-- [ ] Phase 11: document watcher
+- [x] Phase 11: document watcher
 - [ ] Phase 12: deploy to the Supabase project "Hackathon"
 
 ---
@@ -150,7 +150,8 @@ at all; the site hides links to unpublished ones, so two stories can link to eac
   for each confirmed subscriber.
 - `email_outbox` after insert → ask `send-emails` to run (pg_net). A pg_cron job retries every
   10 minutes.
-- pg_cron daily 02:00 Ulaanbaatar → `watch-documents`.
+- pg_cron every hour → `watch-documents`; a page is due 20 hours after its last check (about daily),
+  at most 10 pages per run.
 
 ## 5. Phases
 
@@ -272,6 +273,11 @@ Done when: `supabase db reset` and `supabase test db` pass.
 - `watch-documents` function: fetches each active URL (skips ones checked in the last 6 hours
   unless staff force it), extracts text, hashes it, records a change event with old and new text.
 - Daily pg_cron job; admin page to add documents, run now, see changes as a diff, mark seen.
+- Built: public https pages only (no IP, port, localhost; the same rule on every redirect, which
+  the function follows by hand). Text = the page's <main> (else <body>) without scripts, styles,
+  navigation and footers; non-text files (PDF) are compared by bytes. A page with no text is
+  reported (`no_text`, likely rendered with JavaScript) instead of looking unchanged. A change
+  can be sent to "AI ноорог" with its new text. The dashboard shows unseen changes.
 
 ### Phase 12 — deploy
 
