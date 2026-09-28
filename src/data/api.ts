@@ -271,3 +271,32 @@ export async function submitReport(
     }),
   )
 }
+
+/** Follow a published story by email; the first time, a confirmation email goes out. */
+export async function subscribe(storyId: string, email: string): Promise<void> {
+  check(await db.rpc('subscribe', { p_email: email, p_story_id: storyId }))
+}
+
+/** The link in the confirmation email. Null when the token is unknown. */
+export async function confirmSubscription(
+  token: string,
+): Promise<{ id: string; title: string }[] | null> {
+  const result = check(await db.rpc('confirm_subscription', { p_token: token }))
+  return Array.isArray(result)
+    ? (result as { id: string; title: string }[])
+    : null
+}
+
+/** Stop following one story, or all of them. False when the link is not valid (any more). */
+export async function unsubscribe(
+  token: string,
+  storyId: string | null,
+): Promise<boolean> {
+  const found = check(
+    await db.rpc('unsubscribe', {
+      p_token: token,
+      ...(storyId ? { p_story_id: storyId } : {}),
+    }),
+  )
+  return found === true
+}

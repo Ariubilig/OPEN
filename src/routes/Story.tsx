@@ -5,6 +5,7 @@ import Calculator from '../components/Calculator'
 import ChangeBlock from '../components/ChangeBlock'
 import DataText from '../components/DataText'
 import EvidenceChain from '../components/EvidenceChain'
+import FollowButton from '../components/FollowButton'
 import Icon from '../components/Icon'
 import KeyNumbers from '../components/KeyNumbers'
 import MeaningBlock from '../components/MeaningBlock'
@@ -180,6 +181,7 @@ export function StoryPage({
     <>
       <StageCard story={story} />
       {has.participate && <ParticipateButton />}
+      {!preview && <FollowButton storyId={story.id} />}
     </>
   )
 

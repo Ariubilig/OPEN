@@ -1,27 +1,23 @@
 import { useId, useState, type FormEvent } from 'react'
 import { copy } from '../copy'
-import { ApiError, submitReport } from '../data/api'
+import { ApiError, subscribe } from '../data/api'
 import Icon from './Icon'
 import Modal, { modalInput, modalPrimary, modalSecondary } from './Modal'
 
-const t = copy.report
+const t = copy.alerts
 
 /**
- * "Алдаа мэдээлэх": a reader tells the newsroom about an error in this story. Goes to the
- * admin's report inbox; the database limits how often one address can send.
+ * "Шат өөрчлөгдөхөд мэдэгдэл авах": follow this story by email. The first time, the reader gets
+ * a link to confirm the address; the page says the same either way.
  */
-export default function ReportButton({ storyId }: { storyId: string }) {
-  const messageId = useId()
-  const contactId = useId()
+export default function FollowButton({ storyId }: { storyId: string }) {
+  const emailId = useId()
   const [open, setOpen] = useState(false)
-  const [message, setMessage] = useState('')
-  const [contact, setContact] = useState('')
+  const [email, setEmail] = useState('')
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [error, setError] = useState<string | null>(null)
 
   function start() {
-    setMessage('')
-    setContact('')
     setState('idle')
     setError(null)
     setOpen(true)
@@ -29,16 +25,16 @@ export default function ReportButton({ storyId }: { storyId: string }) {
 
   async function send(e: FormEvent) {
     e.preventDefault()
-    if (message.trim().length < 5) return setError(t.tooShort)
     setState('sending')
     setError(null)
     try {
-      await submitReport(storyId, message.trim(), contact.trim())
+      await subscribe(storyId, email.trim())
       setState('sent')
     } catch (err) {
       setState('idle')
+      const code = err instanceof ApiError ? err.code : undefined
       setError(
-        err instanceof ApiError && err.code === 'PT429' ? t.tooMany : t.failed,
+        code === 'PT400' ? t.invalid : code === 'PT429' ? t.tooMany : t.failed,
       )
     }
   }
@@ -48,9 +44,9 @@ export default function ReportButton({ storyId }: { storyId: string }) {
       <button
         type="button"
         onClick={start}
-        className="inline-flex min-h-11 items-center gap-2 text-small font-semibold text-accent underline underline-offset-3 hover:no-underline"
+        className="flex min-h-[54px] items-center justify-center gap-2.5 rounded-full border border-line-strong bg-surface px-[22px] font-semibold text-ink transition-colors hover:border-ink"
       >
-        <Icon name="flag" className="size-4" />
+        <Icon name="calendar" className="size-5" />
         {t.button}
       </button>
       <Modal
@@ -77,39 +73,19 @@ export default function ReportButton({ storyId }: { storyId: string }) {
           <form onSubmit={send} className="flex flex-col gap-4">
             <p className="text-ink-2">{t.intro}</p>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={messageId} className="text-small font-semibold">
-                {t.message}
-              </label>
-              <textarea
-                id={messageId}
-                required
-                rows={4}
-                maxLength={2000}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                aria-describedby={`${messageId}-hint`}
-                className={`${modalInput} py-2.5`}
-              />
-              <p id={`${messageId}-hint`} className="text-meta text-muted">
-                {t.messageHint}
-              </p>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={contactId} className="text-small font-semibold">
-                {t.contact}
+              <label htmlFor={emailId} className="text-small font-semibold">
+                {t.email}
               </label>
               <input
-                id={contactId}
-                maxLength={200}
+                id={emailId}
+                type="email"
+                required
+                maxLength={254}
                 autoComplete="email"
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                aria-describedby={`${contactId}-hint`}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className={`${modalInput} min-h-11 py-2`}
               />
-              <p id={`${contactId}-hint`} className="text-meta text-muted">
-                {t.contactHint}
-              </p>
             </div>
             {error && (
               <p role="alert" className="text-small font-semibold text-del-ink">

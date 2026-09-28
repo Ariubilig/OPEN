@@ -44,27 +44,29 @@ const t = adminCopy.editor
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const id = params.id ?? ''
-  const [story, list, live, revisions, team, settings] = await Promise.all([
-    maybe(supabase.from('stories').select('*').eq('id', id).maybeSingle()),
-    call(
-      supabase
-        .from('story_admin_list')
-        .select('id, title, is_live')
-        .order('updated_at', { ascending: false }),
-    ),
-    maybe(
-      supabase
-        .from('published_stories')
-        .select('content')
-        .eq('id', id)
-        .maybeSingle(),
-    ),
-    fetchRevisions(id),
-    call(supabase.from('staff').select('user_id, name')),
-    call(
-      supabase.from('settings').select('require_two_person_review').single(),
-    ),
-  ])
+  const [story, list, live, revisions, team, settings, followers] =
+    await Promise.all([
+      maybe(supabase.from('stories').select('*').eq('id', id).maybeSingle()),
+      call(
+        supabase
+          .from('story_admin_list')
+          .select('id, title, is_live')
+          .order('updated_at', { ascending: false }),
+      ),
+      maybe(
+        supabase
+          .from('published_stories')
+          .select('content')
+          .eq('id', id)
+          .maybeSingle(),
+      ),
+      fetchRevisions(id),
+      call(supabase.from('staff').select('user_id, name')),
+      call(
+        supabase.from('settings').select('require_two_person_review').single(),
+      ),
+      call(supabase.rpc('follower_count', { p_story_id: id })),
+    ])
   if (!story) throw new Error('not_found')
   return {
     story: story as StoryRow,
@@ -78,6 +80,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     wasPublished: revisions.some((r) => r.action === 'publish'),
     names: new Map(team.map((m) => [m.user_id, m.name])),
     twoPersonRule: settings.require_two_person_review,
+    followers,
   }
 }
 
@@ -165,6 +168,7 @@ function EditorBody({
   wasPublished,
   names,
   twoPersonRule,
+  followers,
 }: Data) {
   const staff = useStaff()
   const { channels } = useSite()
@@ -285,6 +289,11 @@ function EditorBody({
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StateBadge state={draft.saved.state} />
+              {followers > 0 && (
+                <span className="text-meta font-semibold text-muted">
+                  {t.followers(followers)}
+                </span>
+              )}
               {live && (
                 <a
                   href={`/story/${story.id}`}

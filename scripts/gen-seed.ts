@@ -129,7 +129,10 @@ ${channelRows.join(',\n')};
 
 insert into public.tax_rules (id, content) values ('pit', ${jsonb(readJson('taxRules.json'))});
 
-update public.settings set site_url = 'http://localhost:5173';
+-- the database reaches the edge functions through the gateway container on the Docker network
+update public.settings
+set site_url = 'http://localhost:5173',
+    functions_url = 'http://supabase_kong_tod:8000/functions/v1';
 
 ${stories.join('\n\n')}
 `

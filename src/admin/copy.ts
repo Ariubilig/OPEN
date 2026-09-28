@@ -123,6 +123,7 @@ export const adminCopy = {
     deleteConfirm:
       'Энэ мэдээг бүх түүхтэй нь устгах уу? Устгасныг буцаах боломжгүй.',
     reviewNote: 'Хянагчийн тэмдэглэл',
+    followers: (n: number) => `${n} уншигч дагаж байна`,
     sections: {
       basics: 'Үндсэн мэдээлэл',
       sources: 'Эх сурвалж',
@@ -426,6 +427,22 @@ export const adminCopy = {
       publishedAt: 'Нийтэлсэн огноо',
       note: 'Багийн тэмдэглэл',
       noteHint: 'Сайтад гарахгүй.',
+    },
+    alerts: {
+      title: 'И-мэйл мэдэгдэл',
+      intro:
+        'Уншигчид мэдээг дагаж, шат өөрчлөгдөхөд и-мэйл авна. Захидлыг Resend илгээнэ: Supabase-д RESEND_API_KEY, EMAIL_FROM нууц утгыг тохируулна.',
+      subscribers: (n: number) => `${n} баталгаажсан хаяг`,
+      statuses: {
+        pending: 'Хүлээгдэж буй',
+        sending: 'Илгээж буй',
+        sent: 'Илгээсэн',
+        failed: 'Илгээж чадаагүй',
+        skipped: 'Алгассан',
+      } as Record<string, string>,
+      skippedHint:
+        'Алгассан: и-мэйл үйлчилгээ тохируулаагүй үед дараалалд орсон захидал.',
+      problems: 'Сүүлийн алдаа',
     },
     tax: {
       title: 'Орлогын албан татварын шатлал',

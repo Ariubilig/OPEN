@@ -13,7 +13,7 @@ the `claude/supabase` branch. Tick the boxes as phases land.
 - [x] Phase 6: review and publishing workflow
 - [x] Phase 7: reader error reports and search
 - [x] Phase 8: SEO and sharing (per-story link previews, sitemap, RSS)
-- [ ] Phase 9: email alerts when a story's stage changes
+- [x] Phase 9: email alerts when a story's stage changes
 - [ ] Phase 10: AI draft with Claude
 - [ ] Phase 11: document watcher
 - [ ] Phase 12: deploy to the Supabase project "Hackathon"

@@ -384,8 +384,16 @@ inspector_port = 8093
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# Local only: alert emails go to the local inbox (Mailpit) instead of Resend. On the hosted
+# project set RESEND_API_KEY and EMAIL_FROM with `supabase secrets set`.
+[edge_runtime.secrets]
+MAILPIT_URL = "http://supabase_inbucket_tod:8025"
+EMAIL_FROM = "Tod <alerts@tod.test>"
+
+# Called by the database (pg_net), which has no user token. It only sends what is already
+# queued in email_outbox, so calling it again does nothing new.
+[functions.send-emails]
+verify_jwt = false
 
 [analytics]
 enabled = false

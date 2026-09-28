@@ -1,6 +1,6 @@
 # CLAUDE.md — project rules
 
-1. All UI text is Mongolian Cyrillic; code, identifiers and file names are English. UI labels live in `src/copy.ts` (public site) and `src/admin/copy.ts` (admin, lazy-loaded); components never hard-code Mongolian text except content coming from data.
+1. All UI text is Mongolian Cyrillic; code, identifiers and file names are English. UI labels live in `src/copy.ts` (public site), `src/admin/copy.ts` (admin, lazy-loaded) and `supabase/functions/_shared/emails.ts` (emails); components never hard-code Mongolian text except content coming from data.
 2. No sentence without a source. Every content sentence is a `Cited` object `{ text, source }` and renders with a tappable source marker. `npm run check` fails on missing or unknown source ids.
 3. Never invent legal text, numbers, dates, names or URLs. Unknown values are the literal string `TODO_VERIFY`, rendered as a visible dashed placeholder "Баталгаажуулах" — never as raw text.
 4. Neutral language: no evaluative words and no party framing. Where actors disagree, show each position as a cited fact with identical styling.

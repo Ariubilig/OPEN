@@ -75,12 +75,30 @@ export async function loader() {
     ),
     admin ? call(supabase.rpc('list_staff')) : Promise.resolve([]),
   ])
+  // email alerts: only admins can read the outbox and addresses (as counts here)
+  const [outbox, subscribers] = admin
+    ? await Promise.all([
+        call(
+          supabase
+            .from('email_outbox')
+            .select('id, status, last_error, created_at')
+            .order('id', { ascending: false })
+            .limit(500),
+        ),
+        supabase
+          .from('subscribers')
+          .select('id', { count: 'exact', head: true })
+          .not('confirmed_at', 'is', null),
+      ])
+    : [[], { count: 0 }]
   return {
     admin,
     settings,
     channels: channels.map((ch) => ch.content as Channel),
     taxRules: (taxRules?.content ?? null) as TaxRules | null,
     team,
+    outbox,
+    subscribers: subscribers.count ?? 0,
   }
 }
 
@@ -839,6 +857,56 @@ function TaxSection({ taxRules }: { taxRules: TaxRules }) {
   )
 }
 
+// ---- email alerts ------------------------------------------------------------------------------
+
+const OUTBOX_STATUSES = ['pending', 'sending', 'sent', 'failed', 'skipped']
+
+function AlertsSection({
+  outbox,
+  subscribers,
+}: {
+  outbox: Data['outbox']
+  subscribers: number
+}) {
+  const a = t.alerts
+  const problems = outbox
+    .filter((e) => e.last_error && e.status !== 'sent')
+    .slice(0, 5)
+  return (
+    <Panel id="alerts" title={a.title} intro={a.intro}>
+      <p className="text-small font-semibold">{a.subscribers(subscribers)}</p>
+      <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {OUTBOX_STATUSES.map((status) => (
+          <div key={status} className="rounded-xl bg-paper px-3 py-2">
+            <dt className="text-meta text-muted">{a.statuses[status]}</dt>
+            <dd className="text-[20px] font-bold tabular-nums">
+              {outbox.filter((e) => e.status === status).length}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {outbox.some((e) => e.status === 'skipped') && (
+        <p className="mt-2 text-meta text-muted">{a.skippedHint}</p>
+      )}
+      {problems.length > 0 && (
+        <>
+          <h3 className="mt-4 text-[15px]">{a.problems}</h3>
+          <ul className="mt-1 flex flex-col gap-1 text-meta">
+            {problems.map((e) => (
+              <li key={e.id} className="break-words">
+                <span className="text-muted tabular-nums">
+                  {formatDateTime(e.created_at)}
+                </span>{' '}
+                {e.last_error}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </Panel>
+  )
+}
+
 // ---- page --------------------------------------------------------------------------------------
 
 export function Component() {
@@ -854,6 +922,7 @@ export function Component() {
           <PublishingSection settings={data.settings} />
           <ChannelsSection channels={data.channels} />
           {data.taxRules && <TaxSection taxRules={data.taxRules} />}
+          <AlertsSection outbox={data.outbox} subscribers={data.subscribers} />
         </>
       )}
     </div>

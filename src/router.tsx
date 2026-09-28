@@ -59,6 +59,19 @@ export const router = createBrowserRouter([
                   Component: (await import('./routes/Search')).default,
                 }),
               },
+              // the pages the alert emails link to
+              {
+                path: 'alerts/confirm',
+                lazy: async () => ({
+                  Component: (await import('./routes/Alerts')).ConfirmAlerts,
+                }),
+              },
+              {
+                path: 'alerts/unsubscribe',
+                lazy: async () => ({
+                  Component: (await import('./routes/Alerts')).Unsubscribe,
+                }),
+              },
               { path: '*', element: <NotFound />, loader: notFoundLoader },
             ],
           },

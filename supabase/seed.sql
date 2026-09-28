@@ -67,7 +67,10 @@ insert into public.channels (id, sort_order, content) values
 
 insert into public.tax_rules (id, content) values ('pit', $seed${"verified":true,"assumption":"Ойролцоо тооцоо: хуульд заасан жилийн шатлалыг 12 сард тэнцүү хуваасан; нийгмийн даатгалын шимтгэл болон бусад хөнгөлөлтийг тооцоогүй.","source":{"title":"Татварын багц хуулийн төслийг эцэслэн баталлаа","publisher":"ikon.mn","url":"https://ikon.mn/n/3ojp","publishedAt":"2026-06-26"},"lawSource":{"title":"Хувь хүний орлогын албан татварын тухай хууль","publisher":"legalinfo.mn","url":"https://legalinfo.mn/mn/detail?lawId=14410"},"years":[{"year":2026,"label":"Одоо","brackets":[{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]},{"year":2027,"label":"2027.01.01-нээс","brackets":[{"upTo":792000,"rate":0},{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]},{"year":2028,"label":"2028.01.01-нээс","brackets":[{"upTo":792000,"rate":0},{"upTo":2000000,"rate":0.01},{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]}]}$seed$::jsonb);
 
-update public.settings set site_url = 'http://localhost:5173';
+-- the database reaches the edge functions through the gateway container on the Docker network
+update public.settings
+set site_url = 'http://localhost:5173',
+    functions_url = 'http://supabase_kong_tod:8000/functions/v1';
 
 -- alcohol-service-regulation.json
 do $do$

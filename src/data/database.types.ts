@@ -35,6 +35,45 @@ export type Database = {
         }
         Relationships: []
       }
+      email_outbox: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          data: Json
+          id: number
+          last_error: string | null
+          sent_at: string | null
+          status: string
+          template: string
+          to_email: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          data?: Json
+          id?: never
+          last_error?: string | null
+          sent_at?: string | null
+          status?: string
+          template: string
+          to_email: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          data?: Json
+          id?: never
+          last_error?: string | null
+          sent_at?: string | null
+          status?: string
+          template?: string
+          to_email?: string
+        }
+        Relationships: []
+      }
       published_stories: {
         Row: {
           content: Json
@@ -297,6 +336,70 @@ export type Database = {
           },
         ]
       }
+      subscribers: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          email: string
+          id: string
+          token: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          token?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          story_id: string
+          subscriber_id: string
+        }
+        Insert: {
+          created_at?: string
+          story_id: string
+          subscriber_id: string
+        }
+        Update: {
+          created_at?: string
+          story_id?: string
+          subscriber_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "story_admin_list"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_subscriber_id_fkey"
+            columns: ["subscriber_id"]
+            isOneToOne: false
+            referencedRelation: "subscribers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_rules: {
         Row: {
           content: Json
@@ -423,6 +526,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_emails: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          data: Json
+          id: number
+          site_url: string
+          template: string
+          to_email: string
+        }[]
+      }
+      confirm_subscription: { Args: { p_token: string }; Returns: Json }
       create_story: {
         Args: {
           p_action?: Database["public"]["Enums"]["revision_action"]
@@ -450,6 +565,11 @@ export type Database = {
         }
       }
       delete_story: { Args: { p_id: string }; Returns: undefined }
+      finish_email: {
+        Args: { p_error?: string; p_id: number; p_status: string }
+        Returns: undefined
+      }
+      follower_count: { Args: { p_story_id: string }; Returns: number }
       get_channels: { Args: never; Returns: Json }
       get_tax_rules: { Args: never; Returns: Json }
       list_staff: {
@@ -638,6 +758,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      subscribe: {
+        Args: { p_email: string; p_story_id: string }
+        Returns: undefined
+      }
       unpublish_story: {
         Args: { p_id: string; p_note: string; p_version: number }
         Returns: {
@@ -659,6 +783,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      unsubscribe: {
+        Args: { p_story_id?: string; p_token: string }
+        Returns: boolean
       }
       update_my_name: { Args: { p_name: string }; Returns: undefined }
     }
