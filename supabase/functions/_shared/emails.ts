@@ -6,7 +6,8 @@ const TODO = 'TODO_VERIFY'
 const PLACEHOLDER = 'Баталгаажуулж байна'
 
 export const emailCopy = {
-  notOfficial: 'Энэ бол УИХ-ын албан ёсны сайт биш.',
+  // the same as the site footer (copy.footer.independent in src/copy.ts)
+  notOfficial: 'Энэ бол УИХ, Засгийн газрын албан ёсны сайт биш.',
   disclaimer: 'Энэ нь мэдээлэл бөгөөд хуулийн зөвлөгөө биш.',
   confirm: {
     subject: (title: string) =>

@@ -20,7 +20,7 @@ export type Revision = {
 }
 
 /** The newest revisions of a story, newest first. */
-export function fetchRevisions(storyId: string): Promise<Revision[]> {
+function fetchRevisions(storyId: string): Promise<Revision[]> {
   return call(
     supabase
       .from('story_revisions')

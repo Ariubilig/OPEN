@@ -499,7 +499,7 @@ function AddDocument({ data }: { data: Data }) {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setDone(false)
-    const ok = await add.run(async () => {
+    await add.run(async () => {
       const doc = await call(
         supabase.rpc('add_watched_document', {
           p_url: url,
@@ -507,15 +507,15 @@ function AddDocument({ data }: { data: Data }) {
           p_story_id: storyId,
         }),
       )
-      // read it at once: the first text is the baseline later checks compare with
-      await runCheck([doc.id])
-    })
-    if (ok) {
+      // the page is watched from here on, even if the first read below fails (the next
+      // scheduled check reads it then); a second submit would only say the URL is taken
       setDone(true)
       setUrl('')
       setLabel('')
       setStoryId('')
-    }
+      // read it at once: the first text is the baseline later checks compare with
+      await runCheck([doc.id])
+    })
     revalidate()
   }
 

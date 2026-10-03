@@ -331,7 +331,6 @@ const URL_RULES = {
   functions_url: /^https?:\/\/\S+[^/]$/,
   deploy_hook_url: /^https:\/\/\S+$/,
 } as const
-const URL_ERROR = 'Холбоосыг https://-ээр эхлүүлж бичнэ үү.'
 
 function PublishingSection({ settings }: { settings: Data['settings'] }) {
   const { revalidate } = useRevalidator()
@@ -384,7 +383,7 @@ function PublishingSection({ settings }: { settings: Data['settings'] }) {
       label={label}
       hint={hint}
       optional
-      error={invalid.has(key) ? URL_ERROR : null}
+      error={invalid.has(key) ? t.publishing.urlError : null}
     >
       {(props) => (
         <TextInput
