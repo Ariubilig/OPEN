@@ -20,6 +20,7 @@ const template = `<!doctype html>
     <meta property="og:type" content="website" />
     <meta property="og:title" content="site" />
     <meta property="og:description" content="site" />
+    <meta name="twitter:card" content="summary" />
     <title>site</title>
   </head>
   <body><div id="root"></div></body>
@@ -80,6 +81,31 @@ describe('storyHead', () => {
     )
     expect(html2).not.toContain(TODO)
     expect(html2).toContain(`Хууль ${copy.placeholder}`)
+  })
+
+  it('adds the preview image and a large card when there is one', () => {
+    const image = { url: `${SITE}/og/tax-package-2026.png?v=1`, alt: 'Гарчиг' }
+    const withImage = storyHead(template, published, SITE, image)
+    expect(withImage).toContain(
+      '<meta name="twitter:card" content="summary_large_image" />',
+    )
+    expect(withImage).toContain(
+      '<meta property="og:image" content="https://tod.example/og/tax-package-2026.png?v=1" />',
+    )
+    expect(withImage).toContain(
+      '<meta property="og:image:alt" content="Гарчиг" />',
+    )
+    // without one the page keeps the small text card
+    expect(html).toContain('<meta name="twitter:card" content="summary" />')
+    expect(html).not.toContain('og:image')
+    const home = homeHead(template, SITE, {
+      url: `${SITE}/og/site.png`,
+      alt: 'Тод',
+    })
+    expect(home).toContain('content="summary_large_image"')
+    expect(home).toContain(
+      '<link rel="canonical" href="https://tod.example/" />',
+    )
   })
 
   it('inserts "$" sequences in the text as written', () => {

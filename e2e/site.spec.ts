@@ -131,6 +131,10 @@ test('a followed story appears on the feed, flagged when its stage moved', async
   // opening the story again: seen, no flag
   await following.getByRole('link').first().click()
   await expect(page).toHaveURL(/\/story\/budget-2027/)
+  // the story page has rendered (and recorded the visit)
+  await expect(
+    page.getByRole('button', { name: 'Дагаж байна', exact: true }),
+  ).toBeVisible()
   await page.goto('/')
   await expect(
     page

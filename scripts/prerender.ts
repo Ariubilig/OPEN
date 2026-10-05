@@ -1,5 +1,5 @@
-// After `vite build`: per-story HTML with its own link-preview tags, sitemap.xml, rss.xml and
-// robots.txt, from the stories published in Supabase. Run by `npm run build`.
+// After `vite build`: per-story HTML with its own link-preview tags and image, sitemap.xml, the
+// RSS feeds and robots.txt, from the stories published in Supabase. Run by `npm run build`.
 //
 // Needs SITE_URL (the public origin) and VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY, from the
 // environment or .env files. Without them, or when the database cannot be reached, it warns and
@@ -8,14 +8,18 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadEnv } from 'vite'
-import { StorySchema, TOPICS } from '../src/data/schema.ts'
+import { APP_NAME } from '../src/config.ts'
+import { copy } from '../src/copy.ts'
+import { StorySchema, TOPICS, TODO } from '../src/data/schema.ts'
 import { topicFeedPath } from '../src/lib/feeds.ts'
+import { siteImage, storyImage } from './og-image.ts'
 import {
   homeHead,
   robots,
   rss,
   sitemap,
   storyHead,
+  type PreviewImage,
   type PublishedStory,
 } from './prerender-lib.ts'
 
@@ -27,9 +31,39 @@ const apiUrl = env.VITE_SUPABASE_URL ?? ''
 const key = env.VITE_SUPABASE_ANON_KEY ?? ''
 
 const warn = (message: string) => console.warn(`prerender: ${message}`)
-const write = (path: string, text: string) => {
+const write = (path: string, data: string | Uint8Array) => {
   mkdirSync(join(DIST, path, '..'), { recursive: true })
-  writeFileSync(join(DIST, path), text)
+  writeFileSync(join(DIST, path), data)
+}
+
+/**
+ * og/<id>.png per story and og/site.png. The URL carries the publish time, so a republished
+ * story's new image is not hidden behind a cached old one. A failure costs the images, not the
+ * build: the pages then keep the text-only preview.
+ */
+async function previewImages(
+  stories: PublishedStory[],
+  siteUrl: string,
+): Promise<{ site?: PreviewImage; byId: Map<string, PreviewImage> }> {
+  const byId = new Map<string, PreviewImage>()
+  try {
+    write('og/site.png', await siteImage())
+    const site = {
+      url: `${siteUrl}/og/site.png`,
+      alt: `${APP_NAME} — ${copy.tagline}`,
+    }
+    for (const { story, publishedAt } of stories) {
+      write(`og/${story.id}.png`, await storyImage(story))
+      byId.set(story.id, {
+        url: `${siteUrl}/og/${story.id}.png?v=${Date.parse(publishedAt) / 1000}`,
+        alt: story.title.replaceAll(TODO, copy.placeholder),
+      })
+    }
+    return { site, byId }
+  } catch (e) {
+    warn(`preview images skipped (${(e as Error).message})`)
+    return { byId: new Map() }
+  }
 }
 
 async function publishedStories(): Promise<PublishedStory[]> {
@@ -73,12 +107,18 @@ async function main() {
     return
   }
 
-  write('index.html', homeHead(template, siteUrl))
+  const images = await previewImages(stories, siteUrl)
+  write('index.html', homeHead(template, siteUrl, images.site))
   for (const published of stories) {
     // story/<id>.html: served at /story/<id> by Vercel (cleanUrls), Netlify and vite preview
     write(
       `story/${published.story.id}.html`,
-      storyHead(template, published, siteUrl),
+      storyHead(
+        template,
+        published,
+        siteUrl,
+        images.byId.get(published.story.id),
+      ),
     )
   }
   write('sitemap.xml', sitemap(stories, siteUrl))
@@ -87,7 +127,7 @@ async function main() {
   for (const topic of TOPICS)
     write(topicFeedPath(topic), rss(stories, siteUrl, topic))
   console.log(
-    `prerender: ${stories.length} story pages, sitemap.xml, rss.xml and ${TOPICS.length} topic feeds, robots.txt for ${siteUrl}`,
+    `prerender: ${stories.length} story pages, ${images.byId.size} preview images, sitemap.xml, rss.xml and ${TOPICS.length} topic feeds, robots.txt for ${siteUrl}`,
   )
 }
 

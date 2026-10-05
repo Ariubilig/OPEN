@@ -18,7 +18,8 @@ decisions behind it: [docs/PLAN.md](docs/PLAN.md).
 
 - **Site** (`src/`): React single-page app. It reads published stories from Supabase with the
   public key; `scripts/prerender.ts` writes a page per story after the build, so shared links get
-  a title and a preview. Readers can search (in the feed, `?q=`), follow a document in this
+  a title, a description and a preview image (`scripts/og-image.ts`), plus the sitemap and the RSS
+  feeds (`/rss.xml` and one per topic, e.g. `/rss/tax.xml`). Readers can search (in the feed, `?q=`), follow a document in this
   browser ("Дагах", localStorage) or by email when its stage changes, share a story, and report
   an error. "Шийдвэрүүд хаана явж байна?" on the feed lists the next dates and latest steps of
   every document, computed from the story timelines — nothing on the site is invented to look
