@@ -18,6 +18,7 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:seed": "tsx scripts/gen-seed.ts",
+    "db:sql-editor": "tsx scripts/gen-sql-editor.ts",
     "db:types": "tsx scripts/gen-types.ts"
   },
   "dependencies": {

@@ -58,7 +58,8 @@ Scripts: `npm run build` (check + typecheck + build + prerender into `dist/`), `
 `npm run format`. Generated files — never edit them by hand: `npm run db:types`
 (`src/data/database.types.ts`), `npm run db:seed` (`supabase/seed.sql`,
 `supabase/bootstrap.sql`), `npm run db:json-schema` (the JSON Schema migration and
-`supabase/functions/_shared/story-schema.json`).
+`supabase/functions/_shared/story-schema.json`), `npm run db:sql-editor`
+(`supabase/setup/schema.sql`, every migration in one file; run it after adding a migration).
 
 ## Add a story
 
@@ -81,6 +82,10 @@ and don't reformat files you are not changing.
 ## Deploy
 
 Replace `<ref>` with the Supabase project reference and `<domain>` with the site's address.
+
+**Without the CLI or Docker:** [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) sets up the
+project from the dashboard's SQL editor (`supabase/setup/schema.sql`, then `bootstrap.sql`, then
+`supabase/setup/first-admin.sql`). The steps below are the CLI way.
 
 **1. Database.** The project must be active (a paused free project is restored from the
 dashboard first).
