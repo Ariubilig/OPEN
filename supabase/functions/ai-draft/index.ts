@@ -21,7 +21,7 @@ import { corsHeaders, json } from '../_shared/http.ts'
 
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void }
 
-const MODEL = Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-opus-5'
+const MODEL = Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-opus-5-5'
 const EFFORT = (Deno.env.get('ANTHROPIC_EFFORT') ?? 'high') as
   'low' | 'medium' | 'high'
 const SCHEMA = modelSchema(storySchema as Record<string, unknown>)
