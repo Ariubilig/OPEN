@@ -16,15 +16,14 @@ export const configured = SUPABASE_URL !== '' && SUPABASE_KEY !== ''
 // (sb_publishable_…) only in `apikey`.
 const isJwt = (key: string) => key.split('.').length === 3
 
-export const db = new PostgrestClient<Database, typeof DB_SCHEMA>(
-  `${SUPABASE_URL}/rest/v1`,
-  {
-    schema: DB_SCHEMA,
-    headers: {
-      apikey: SUPABASE_KEY,
-      ...(isJwt(SUPABASE_KEY)
-        ? { Authorization: `Bearer ${SUPABASE_KEY}` }
-        : {}),
-    },
+export const db = new PostgrestClient<
+  Database,
+  Database['__InternalSupabase'],
+  typeof DB_SCHEMA
+>(`${SUPABASE_URL}/rest/v1`, {
+  schema: DB_SCHEMA,
+  headers: {
+    apikey: SUPABASE_KEY,
+    ...(isJwt(SUPABASE_KEY) ? { Authorization: `Bearer ${SUPABASE_KEY}` } : {}),
   },
-)
+})

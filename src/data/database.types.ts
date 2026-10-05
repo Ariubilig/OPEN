@@ -9,7 +9,12 @@ export type Json =
   | Json[]
 
 export type Database = {
-  public: {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  open: {
     Tables: {
       ai_drafts: {
         Row: {
@@ -274,19 +279,19 @@ export type Database = {
         Row: {
           created_at: string
           name: string
-          role: Database["public"]["Enums"]["staff_role"]
+          role: Database["open"]["Enums"]["staff_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           name: string
-          role: Database["public"]["Enums"]["staff_role"]
+          role: Database["open"]["Enums"]["staff_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           name?: string
-          role?: Database["public"]["Enums"]["staff_role"]
+          role?: Database["open"]["Enums"]["staff_role"]
           user_id?: string
         }
         Relationships: []
@@ -298,7 +303,7 @@ export type Database = {
           created_by: string | null
           id: string
           review_note: string | null
-          state: Database["public"]["Enums"]["story_state"]
+          state: Database["open"]["Enums"]["story_state"]
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -311,7 +316,7 @@ export type Database = {
           created_by?: string | null
           id: string
           review_note?: string | null
-          state?: Database["public"]["Enums"]["story_state"]
+          state?: Database["open"]["Enums"]["story_state"]
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
@@ -324,7 +329,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           review_note?: string | null
-          state?: Database["public"]["Enums"]["story_state"]
+          state?: Database["open"]["Enums"]["story_state"]
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
@@ -335,7 +340,7 @@ export type Database = {
       }
       story_revisions: {
         Row: {
-          action: Database["public"]["Enums"]["revision_action"]
+          action: Database["open"]["Enums"]["revision_action"]
           author: string | null
           content: Json
           created_at: string
@@ -344,7 +349,7 @@ export type Database = {
           story_id: string
         }
         Insert: {
-          action: Database["public"]["Enums"]["revision_action"]
+          action: Database["open"]["Enums"]["revision_action"]
           author?: string | null
           content: Json
           created_at?: string
@@ -353,7 +358,7 @@ export type Database = {
           story_id: string
         }
         Update: {
-          action?: Database["public"]["Enums"]["revision_action"]
+          action?: Database["open"]["Enums"]["revision_action"]
           author?: string | null
           content?: Json
           created_at?: string
@@ -575,7 +580,7 @@ export type Database = {
           published_at: string | null
           review_note: string | null
           stage: string | null
-          state: Database["public"]["Enums"]["story_state"] | null
+          state: Database["open"]["Enums"]["story_state"] | null
           submitted_at: string | null
           submitted_by_name: string | null
           title: string | null
@@ -653,13 +658,13 @@ export type Database = {
       add_staff: {
         Args: {
           p_name: string
-          p_role: Database["public"]["Enums"]["staff_role"]
+          p_role: Database["open"]["Enums"]["staff_role"]
           p_user_id: string
         }
         Returns: {
           created_at: string
           name: string
-          role: Database["public"]["Enums"]["staff_role"]
+          role: Database["open"]["Enums"]["staff_role"]
           user_id: string
         }
         SetofOptions: {
@@ -714,7 +719,7 @@ export type Database = {
       confirm_subscription: { Args: { p_token: string }; Returns: Json }
       create_story: {
         Args: {
-          p_action?: Database["public"]["Enums"]["revision_action"]
+          p_action?: Database["open"]["Enums"]["revision_action"]
           p_content: Json
           p_id: string
         }
@@ -724,7 +729,7 @@ export type Database = {
           created_by: string | null
           id: string
           review_note: string | null
-          state: Database["public"]["Enums"]["story_state"]
+          state: Database["open"]["Enums"]["story_state"]
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -754,7 +759,7 @@ export type Database = {
           email: string
           last_sign_in_at: string
           name: string
-          role: Database["public"]["Enums"]["staff_role"]
+          role: Database["open"]["Enums"]["staff_role"]
           user_id: string
         }[]
       }
@@ -803,7 +808,7 @@ export type Database = {
           created_by: string | null
           id: string
           review_note: string | null
-          state: Database["public"]["Enums"]["story_state"]
+          state: Database["open"]["Enums"]["story_state"]
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -845,7 +850,7 @@ export type Database = {
           created_by: string | null
           id: string
           review_note: string | null
-          state: Database["public"]["Enums"]["story_state"]
+          state: Database["open"]["Enums"]["story_state"]
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -867,7 +872,7 @@ export type Database = {
           created_by: string | null
           id: string
           review_note: string | null
-          state: Database["public"]["Enums"]["story_state"]
+          state: Database["open"]["Enums"]["story_state"]
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -906,7 +911,7 @@ export type Database = {
       }
       set_staff_role: {
         Args: {
-          p_role: Database["public"]["Enums"]["staff_role"]
+          p_role: Database["open"]["Enums"]["staff_role"]
           p_user_id: string
         }
         Returns: undefined
@@ -925,7 +930,7 @@ export type Database = {
           created_by: string | null
           id: string
           review_note: string | null
-          state: Database["public"]["Enums"]["story_state"]
+          state: Database["open"]["Enums"]["story_state"]
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -951,7 +956,7 @@ export type Database = {
           created_by: string | null
           id: string
           review_note: string | null
-          state: Database["public"]["Enums"]["story_state"]
+          state: Database["open"]["Enums"]["story_state"]
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -1028,12 +1033,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1057,11 +1062,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1082,11 +1087,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1107,11 +1112,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1124,11 +1129,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1138,7 +1143,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  open: {
     Enums: {
       revision_action: [
         "create",
@@ -1156,4 +1161,3 @@ export const Constants = {
     },
   },
 } as const
-

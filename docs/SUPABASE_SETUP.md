@@ -179,6 +179,6 @@ editor.
 | `No account with the email …`                                                            | Add the address under **Authentication → Users** first, with the same spelling.                         |
 | The sign-in email has a link but no code                                                 | The Magic Link template is missing `{{ .Token }}` (step 4).                                             |
 | The code is not accepted                                                                 | Check **Email OTP length** is 6; use the newest email; codes expire after 15 minutes.                   |
-| Signed in, but "Эрх хүрэхгүй байна"                                                      | The account is not in `open.staff`: run `first-admin.sql` (step 5) with that address.                 |
+| Signed in, but "Эрх хүрэхгүй байна"                                                      | The account is not in `open.staff`: run `first-admin.sql` (step 5) with that address.                   |
 | The site shows "Сайтын өгөгдлийн сангийн тохиргоо дутуу байна"                           | `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` is missing; on Vercel, redeploy after setting them.     |
 | A feature that uses an edge function fails                                               | **Edge Functions → (function) → Logs** shows why; most often a missing secret or the functions address. |
