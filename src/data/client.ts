@@ -6,6 +6,9 @@ import type { Database } from './database.types'
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? ''
 export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
 
+/** The app's schema in the (shared) Supabase project; the API must expose it. */
+export const DB_SCHEMA = 'open'
+
 /** True when the build has the Supabase URL and public key. */
 export const configured = SUPABASE_URL !== '' && SUPABASE_KEY !== ''
 
@@ -13,9 +16,15 @@ export const configured = SUPABASE_URL !== '' && SUPABASE_KEY !== ''
 // (sb_publishable_…) only in `apikey`.
 const isJwt = (key: string) => key.split('.').length === 3
 
-export const db = new PostgrestClient<Database>(`${SUPABASE_URL}/rest/v1`, {
-  headers: {
-    apikey: SUPABASE_KEY,
-    ...(isJwt(SUPABASE_KEY) ? { Authorization: `Bearer ${SUPABASE_KEY}` } : {}),
+export const db = new PostgrestClient<Database, typeof DB_SCHEMA>(
+  `${SUPABASE_URL}/rest/v1`,
+  {
+    schema: DB_SCHEMA,
+    headers: {
+      apikey: SUPABASE_KEY,
+      ...(isJwt(SUPABASE_KEY)
+        ? { Authorization: `Bearer ${SUPABASE_KEY}` }
+        : {}),
+    },
   },
-})
+)

@@ -67,7 +67,11 @@ async function previewImages(
 }
 
 async function publishedStories(): Promise<PublishedStory[]> {
-  const headers: Record<string, string> = { apikey: key }
+  // the app's schema (DB_SCHEMA in src/data/client.ts)
+  const headers: Record<string, string> = {
+    apikey: key,
+    'Accept-Profile': 'open',
+  }
   if (key.split('.').length === 3) headers.Authorization = `Bearer ${key}`
   const response = await fetch(
     `${apiUrl}/rest/v1/published_stories?select=content,published_at&order=published_at.desc`,

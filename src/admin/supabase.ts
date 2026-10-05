@@ -1,24 +1,29 @@
 // The admin's Supabase client: auth (email code) plus the editorial RPCs. Loaded only with the
 // admin chunk; the public site uses the smaller PostgREST client in src/data/client.ts.
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_KEY, SUPABASE_URL } from '../data/client'
+import { DB_SCHEMA, SUPABASE_KEY, SUPABASE_URL } from '../data/client'
 import type { Database } from '../data/database.types'
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    // Sign-in and invitation links come back to /admin/login with the session in the URL
-    // fragment. Implicit flow: invitations are created on the server (no PKCE verifier in this
-    // browser), and a sign-in link then also works when opened in another browser.
-    detectSessionInUrl: true,
-    flowType: 'implicit',
+export const supabase = createClient<Database, typeof DB_SCHEMA>(
+  SUPABASE_URL,
+  SUPABASE_KEY,
+  {
+    db: { schema: DB_SCHEMA },
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      // Sign-in and invitation links come back to /admin/login with the session in the URL
+      // fragment. Implicit flow: invitations are created on the server (no PKCE verifier in this
+      // browser), and a sign-in link then also works when opened in another browser.
+      detectSessionInUrl: true,
+      flowType: 'implicit',
+    },
   },
-})
+)
 
-export type StaffRole = Database['public']['Enums']['staff_role']
-export type StoryState = Database['public']['Enums']['story_state']
-export type RevisionAction = Database['public']['Enums']['revision_action']
+export type StaffRole = Database['open']['Enums']['staff_role']
+export type StoryState = Database['open']['Enums']['story_state']
+export type RevisionAction = Database['open']['Enums']['revision_action']
 export type StaffMember = { user_id: string; name: string; role: StaffRole }
 
 const RANK: Record<StaffRole, number> = { editor: 0, reviewer: 1, admin: 2 }

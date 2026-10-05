@@ -28,10 +28,10 @@ function sqlJson(value: unknown): string {
   return `'${JSON.stringify(value).replaceAll("'", "''")}'::json`
 }
 
-/** The migration body: one immutable function per schema in the private schema. */
+/** The migration body: one immutable function per schema in the open_private schema. */
 export function jsonSchemaMigration(): string {
   const fns = (Object.keys(jsonSchemas) as SchemaName[]).map(
-    (name) => `create or replace function private.${name}_json_schema()
+    (name) => `create or replace function open_private.${name}_json_schema()
 returns json
 language sql
 immutable
@@ -43,7 +43,7 @@ as $$ select ${sqlJson(jsonSchemas[name])} $$;`,
   const grants = (Object.keys(jsonSchemas) as SchemaName[])
     .map(
       (name) =>
-        `grant execute on function private.${name}_json_schema() to authenticated, service_role;`,
+        `grant execute on function open_private.${name}_json_schema() to authenticated, service_role;`,
     )
     .join('\n')
   return `${GENERATED_MARKER} — do not edit; run \`npm run db:json-schema\`
@@ -58,7 +58,7 @@ ${grants}
 /** Pull the schema of one function back out of a generated migration (for the drift test). */
 export function schemaFromMigration(sql: string, name: SchemaName): unknown {
   const m = new RegExp(
-    `function private\\.${name}_json_schema\\(\\)[\\s\\S]*?select '([\\s\\S]*?)'::json \\$\\$`,
+    `function open_private\\.${name}_json_schema\\(\\)[\\s\\S]*?select '([\\s\\S]*?)'::json \\$\\$`,
   ).exec(sql)
   if (!m) throw new Error(`no ${name}_json_schema() in the migration`)
   return JSON.parse(m[1].replaceAll("''", "'"))

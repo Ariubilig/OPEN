@@ -37,11 +37,14 @@ Paste `supabase/setup/schema.sql` into a new query and run it.
 Check it worked (new query):
 
 ```sql
-select count(*) as tables from information_schema.tables where table_schema = 'public';
+select count(*) as tables from information_schema.tables where table_schema = 'open';
 select jobname, schedule from cron.job;
 ```
 
 You should see a dozen or more tables and two jobs, `send-emails` and `watch-documents`.
+
+Then let the API serve the app's schema: **Project Settings → Data API → Exposed schemas**, add
+`open` and save. Without it the site and the admin get "Invalid schema: open".
 
 ## 3. Load the starting data: `supabase/bootstrap.sql`
 
@@ -50,8 +53,8 @@ rules for the calculator, and the six stories as drafts. Nothing is published ye
 it again adds nothing.
 
 ```sql
-select count(*) as channels from public.channels;   -- 5
-select id, state from public.stories order by id;   -- 6 rows, all "draft"
+select count(*) as channels from open.channels;   -- 5
+select id, state from open.stories order by id;   -- 6 rows, all "draft"
 ```
 
 ## 4. Sign-in settings (Authentication)
@@ -176,6 +179,6 @@ editor.
 | `No account with the email …`                                                            | Add the address under **Authentication → Users** first, with the same spelling.                         |
 | The sign-in email has a link but no code                                                 | The Magic Link template is missing `{{ .Token }}` (step 4).                                             |
 | The code is not accepted                                                                 | Check **Email OTP length** is 6; use the newest email; codes expire after 15 minutes.                   |
-| Signed in, but "Эрх хүрэхгүй байна"                                                      | The account is not in `public.staff`: run `first-admin.sql` (step 5) with that address.                 |
+| Signed in, but "Эрх хүрэхгүй байна"                                                      | The account is not in `open.staff`: run `first-admin.sql` (step 5) with that address.                 |
 | The site shows "Сайтын өгөгдлийн сангийн тохиргоо дутуу байна"                           | `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` is missing; on Vercel, redeploy after setting them.     |
 | A feature that uses an edge function fails                                               | **Edge Functions → (function) → Logs** shows why; most often a missing secret or the functions address. |

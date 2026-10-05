@@ -11,7 +11,7 @@ const target = process.argv.includes('--linked') ? '--linked' : '--local'
 
 const types = execFileSync(
   'supabase',
-  ['gen', 'types', 'typescript', target, '--schema', 'public'],
+  ['gen', 'types', 'typescript', target, '--schema', 'open'],
   { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
 )
 

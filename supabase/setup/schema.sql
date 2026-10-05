@@ -15,10 +15,12 @@
 -- supabase/migrations/20260927000100_core.sql
 -- ===============================================================================================
 
--- Core: extensions, the private helper schema, staff roles, site settings.
+-- Core: extensions, the app and helper schemas, staff roles, site settings.
 --
 -- Conventions for every migration in this project:
---  * row-level security on every table in public; clients never write editorial tables directly
+--  * the app lives in schema `open` (the Supabase project is shared with other apps); helpers
+--    live in `open_private`, which the API never serves
+--  * row-level security on every table in open; clients never write editorial tables directly
 --  * functions use `set search_path = ''` and schema-qualify every name
 --  * RPC errors: `raise exception '<code>' using errcode = 'PT<http status>'`; the admin maps
 --    <code> to a Mongolian message (src/admin/errors.ts)
@@ -27,58 +29,66 @@ create extension if not exists pg_jsonschema with schema extensions;
 create extension if not exists pg_trgm with schema extensions;
 create extension if not exists pgcrypto with schema extensions;
 
+-- The app's API schema. Supabase gives `public` these grants by default; a new schema needs them
+-- explicitly, and every migration below narrows them with revokes, exactly as it would in public.
+create schema if not exists open;
+grant usage on schema open to anon, authenticated, service_role;
+alter default privileges in schema open grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema open grant all on functions to anon, authenticated, service_role;
+alter default privileges in schema open grant all on sequences to anon, authenticated, service_role;
+
 -- Helpers that the API must not expose. PostgREST only serves the schemas in config.toml.
-create schema if not exists private;
-revoke all on schema private from public;
-grant usage on schema private to anon, authenticated, service_role;
-alter default privileges in schema private revoke execute on functions from public;
+create schema if not exists open_private;
+revoke all on schema open_private from public;
+grant usage on schema open_private to anon, authenticated, service_role;
+alter default privileges in schema open_private revoke execute on functions from public;
 
 -- ---- staff -------------------------------------------------------------------------------------
 
 -- Ordered: a check for 'reviewer' also passes for 'admin'.
-create type public.staff_role as enum ('editor', 'reviewer', 'admin');
+create type open.staff_role as enum ('editor', 'reviewer', 'admin');
 
-create table public.staff (
+create table open.staff (
   user_id uuid primary key references auth.users (id) on delete cascade,
   name text not null check (length(btrim(name)) between 1 and 100),
-  role public.staff_role not null,
+  role open.staff_role not null,
   created_at timestamptz not null default now()
 );
-comment on table public.staff is
+comment on table open.staff is
   'People who may use /admin. A signed-in user without a row here has no access.';
-alter table public.staff enable row level security;
+alter table open.staff enable row level security;
 
-create function private.my_role()
-returns public.staff_role
+create function open_private.my_role()
+returns open.staff_role
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select role from public.staff where user_id = (select auth.uid())
+  select role from open.staff where user_id = (select auth.uid())
 $$;
 
-create function private.is_staff()
+create function open_private.is_staff()
 returns boolean
 language sql
 stable
 security definer
 set search_path = ''
-as $$ select private.my_role() is not null $$;
+as $$ select open_private.my_role() is not null $$;
 
-create function private.is_admin()
+create function open_private.is_admin()
 returns boolean
 language sql
 stable
 security definer
 set search_path = ''
-as $$ select coalesce(private.my_role() = 'admin', false) $$;
+as $$ select coalesce(open_private.my_role() = 'admin', false) $$;
 
-grant execute on function private.my_role(), private.is_staff(), private.is_admin()
+grant execute on function open_private.my_role(), open_private.is_staff(), open_private.is_admin()
   to anon, authenticated;
 
 /** Raise 403 unless the signed-in user has at least `minimum`; returns their user id. */
-create function private.require_role(minimum public.staff_role)
+create function open_private.require_role(minimum open.staff_role)
 returns uuid
 language plpgsql
 stable
@@ -86,7 +96,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  current public.staff_role := private.my_role();
+  current open.staff_role := open_private.my_role();
 begin
   if current is null or current < minimum then
     raise exception 'forbidden' using errcode = 'PT403', detail = minimum::text;
@@ -95,16 +105,16 @@ begin
 end;
 $$;
 
-create policy "staff can read staff" on public.staff
+create policy "staff can read staff" on open.staff
   for select to authenticated
-  using ((select private.is_staff()));
+  using ((select open_private.is_staff()));
 
 -- Staff rows are written by the invite-staff edge function (service role) and the admin RPCs below.
-revoke insert, update, delete, truncate on public.staff from anon, authenticated;
+revoke insert, update, delete, truncate on open.staff from anon, authenticated;
 
 -- ---- settings (one row) ------------------------------------------------------------------------
 
-create table public.settings (
+create table open.settings (
   id boolean primary key default true check (id),
   require_two_person_review boolean not null default true,
   -- origin of the public site, e.g. https://tod.mn — links in emails, prerendered pages
@@ -116,24 +126,24 @@ create table public.settings (
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users (id) on delete set null
 );
-comment on table public.settings is 'Site settings, a single row. Staff read, admins change.';
-insert into public.settings default values;
-alter table public.settings enable row level security;
+comment on table open.settings is 'Site settings, a single row. Staff read, admins change.';
+insert into open.settings default values;
+alter table open.settings enable row level security;
 
-create policy "staff can read settings" on public.settings
+create policy "staff can read settings" on open.settings
   for select to authenticated
-  using ((select private.is_staff()));
+  using ((select open_private.is_staff()));
 
-create policy "admins can change settings" on public.settings
+create policy "admins can change settings" on open.settings
   for update to authenticated
-  using ((select private.is_admin()))
-  with check ((select private.is_admin()));
+  using ((select open_private.is_admin()))
+  with check ((select open_private.is_admin()));
 
-revoke insert, delete, truncate on public.settings from anon, authenticated;
-revoke all on public.settings from anon;
+revoke insert, delete, truncate on open.settings from anon, authenticated;
+revoke all on open.settings from anon;
 
 /** Keeps updated_at / updated_by current on tables staff edit directly. */
-create function private.touch()
+create function open_private.touch()
 returns trigger
 language plpgsql
 set search_path = ''
@@ -145,17 +155,17 @@ begin
 end;
 $$;
 
-create trigger settings_touch before update on public.settings
-  for each row execute function private.touch();
+create trigger settings_touch before update on open.settings
+  for each row execute function open_private.touch();
 
 -- ---- staff administration ----------------------------------------------------------------------
 
 /** Every staff member with their sign-in email (admins only). */
-create function public.list_staff()
+create function open.list_staff()
 returns table (
   user_id uuid,
   name text,
-  role public.staff_role,
+  role open.staff_role,
   email text,
   created_at timestamptz,
   last_sign_in_at timestamptz
@@ -166,41 +176,41 @@ security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('admin');
+  perform open_private.require_role('admin');
   return query
     select s.user_id, s.name, s.role, u.email::text, s.created_at, u.last_sign_in_at
-    from public.staff s
+    from open.staff s
     join auth.users u on u.id = s.user_id
     order by s.created_at;
 end;
 $$;
 
-create function private.assert_not_last_admin(target uuid)
+create function open_private.assert_not_last_admin(target uuid)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  if exists (select 1 from public.staff where user_id = target and role = 'admin')
-     and (select count(*) from public.staff where role = 'admin') = 1 then
+  if exists (select 1 from open.staff where user_id = target and role = 'admin')
+     and (select count(*) from open.staff where role = 'admin') = 1 then
     raise exception 'last_admin' using errcode = 'PT409';
   end if;
 end;
 $$;
 
-create function public.set_staff_role(p_user_id uuid, p_role public.staff_role)
+create function open.set_staff_role(p_user_id uuid, p_role open.staff_role)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('admin');
+  perform open_private.require_role('admin');
   if p_role <> 'admin' then
-    perform private.assert_not_last_admin(p_user_id);
+    perform open_private.assert_not_last_admin(p_user_id);
   end if;
-  update public.staff set role = p_role where user_id = p_user_id;
+  update open.staff set role = p_role where user_id = p_user_id;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
@@ -208,43 +218,43 @@ end;
 $$;
 
 /** Removes access; the auth account stays but can do nothing (sign-up is off). */
-create function public.remove_staff(p_user_id uuid)
+create function open.remove_staff(p_user_id uuid)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('admin');
-  perform private.assert_not_last_admin(p_user_id);
-  delete from public.staff where user_id = p_user_id;
+  perform open_private.require_role('admin');
+  perform open_private.assert_not_last_admin(p_user_id);
+  delete from open.staff where user_id = p_user_id;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
 end;
 $$;
 
-create function public.update_my_name(p_name text)
+create function open.update_my_name(p_name text)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
+  uid uuid := open_private.require_role('editor');
 begin
   if length(btrim(coalesce(p_name, ''))) not between 1 and 100 then
     raise exception 'invalid_name' using errcode = 'PT400';
   end if;
-  update public.staff set name = btrim(p_name) where user_id = uid;
+  update open.staff set name = btrim(p_name) where user_id = uid;
 end;
 $$;
 
-revoke execute on function public.list_staff(), public.set_staff_role(uuid, public.staff_role),
-  public.remove_staff(uuid), public.update_my_name(text)
+revoke execute on function open.list_staff(), open.set_staff_role(uuid, open.staff_role),
+  open.remove_staff(uuid), open.update_my_name(text)
   from public, anon;
-grant execute on function public.list_staff(), public.set_staff_role(uuid, public.staff_role),
-  public.remove_staff(uuid), public.update_my_name(text)
+grant execute on function open.list_staff(), open.set_staff_role(uuid, open.staff_role),
+  open.remove_staff(uuid), open.update_my_name(text)
   to authenticated;
 
 -- ===============================================================================================
@@ -254,26 +264,26 @@ grant execute on function public.list_staff(), public.set_staff_role(uuid, publi
 -- Stories: working copies, their revisions, and the public snapshot.
 --
 -- A story is one JSON document in the shape of StorySchema (src/data/schema.ts).
---  * public.stories            working copy; staff only; may be half-filled while drafting
---  * public.story_revisions    every change to a working copy, with who, when and why
---  * public.published_stories  what readers see: written only by publish_story(), checked
+--  * open.stories            working copy; staff only; may be half-filled while drafting
+--  * open.story_revisions    every change to a working copy, with who, when and why
+--  * open.published_stories  what readers see: written only by publish_story(), checked
 --                              against the JSON Schema, reviewer notes removed
 
-create type public.story_state as enum (
+create type open.story_state as enum (
   'draft',              -- being written, or has changes that are not live yet
   'in_review',          -- submitted for a second person to check
   'changes_requested',  -- a reviewer sent it back with a note
   'published'           -- the working copy is exactly what is live
 );
 
-create type public.revision_action as enum (
+create type open.revision_action as enum (
   'create', 'import', 'ai_draft', 'save', 'restore',
   'submit', 'request_changes', 'publish', 'unpublish'
 );
 
 -- ---- helpers for generated columns (immutable) -------------------------------------------------
 
-create function private.jsonb_texts(value jsonb)
+create function open_private.jsonb_texts(value jsonb)
 returns text[]
 language sql
 immutable
@@ -287,7 +297,7 @@ as $$
 $$;
 
 /** Distinct `group` values of a story's `affects` list. */
-create function private.affect_groups(affects jsonb)
+create function open_private.affect_groups(affects jsonb)
 returns text[]
 language sql
 immutable
@@ -306,7 +316,7 @@ as $$
 $$;
 
 /** Search document: title (A), summary (B), official title (C). No stemming: Mongolian has no config. */
-create function private.story_search_vector(content jsonb)
+create function open_private.story_search_vector(content jsonb)
 returns tsvector
 language sql
 immutable
@@ -319,16 +329,16 @@ as $$
     setweight(to_tsvector('pg_catalog.simple', coalesce(content #>> '{officialTitle,text}', '')), 'C')
 $$;
 
-grant execute on function private.jsonb_texts(jsonb), private.affect_groups(jsonb),
-  private.story_search_vector(jsonb)
+grant execute on function open_private.jsonb_texts(jsonb), open_private.affect_groups(jsonb),
+  open_private.story_search_vector(jsonb)
   to anon, authenticated, service_role;
 
 -- ---- tables ------------------------------------------------------------------------------------
 
-create table public.stories (
+create table open.stories (
   id text primary key check (id ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and length(id) <= 80),
   content jsonb not null check (jsonb_typeof(content) = 'object' and content ->> 'id' = id),
-  state public.story_state not null default 'draft',
+  state open.story_state not null default 'draft',
   review_note text,
   version integer not null default 1,
   created_by uuid references auth.users (id) on delete set null,
@@ -339,25 +349,25 @@ create table public.stories (
   submitted_by uuid references auth.users (id) on delete set null,
   submitted_at timestamptz
 );
-comment on table public.stories is
+comment on table open.stories is
   'Working copy of every story (staff only). Written through the workflow RPCs.';
 
-create table public.story_revisions (
+create table open.story_revisions (
   id bigint generated always as identity primary key,
-  story_id text not null references public.stories (id) on delete cascade,
+  story_id text not null references open.stories (id) on delete cascade,
   content jsonb not null,
-  action public.revision_action not null,
+  action open.revision_action not null,
   note text check (length(note) <= 2000),
   author uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
 );
-comment on table public.story_revisions is 'Every change to a working copy.';
-create index story_revisions_story_idx on public.story_revisions (story_id, id desc);
+comment on table open.story_revisions is 'Every change to a working copy.';
+create index story_revisions_story_idx on open.story_revisions (story_id, id desc);
 
-create table public.published_stories (
-  id text primary key references public.stories (id) on delete cascade,
+create table open.published_stories (
+  id text primary key references open.stories (id) on delete cascade,
   content jsonb not null check (content ->> 'id' = id),
-  revision_id bigint not null references public.story_revisions (id),
+  revision_id bigint not null references open.story_revisions (id),
   first_published_at timestamptz not null default now(),
   published_at timestamptz not null default now(),
   published_by uuid references auth.users (id) on delete set null,
@@ -366,52 +376,52 @@ create table public.published_stories (
   featured boolean generated always as ((content ->> 'featured')::boolean) stored,
   sort_order double precision generated always as ((content ->> 'order')::double precision) stored,
   published_on text generated always as (content ->> 'publishedAt') stored,
-  topics text[] generated always as (private.jsonb_texts(content -> 'topics')) stored,
-  groups text[] generated always as (private.affect_groups(content -> 'affects')) stored,
-  search tsvector generated always as (private.story_search_vector(content)) stored
+  topics text[] generated always as (open_private.jsonb_texts(content -> 'topics')) stored,
+  groups text[] generated always as (open_private.affect_groups(content -> 'affects')) stored,
+  search tsvector generated always as (open_private.story_search_vector(content)) stored
 );
-comment on table public.published_stories is
+comment on table open.published_stories is
   'What readers see. Written only by publish_story(); reviewer notes are removed.';
 create index published_stories_feed_idx
-  on public.published_stories (sort_order nulls last, published_on desc);
-create index published_stories_groups_idx on public.published_stories using gin (groups);
-create index published_stories_search_idx on public.published_stories using gin (search);
+  on open.published_stories (sort_order nulls last, published_on desc);
+create index published_stories_groups_idx on open.published_stories using gin (groups);
+create index published_stories_search_idx on open.published_stories using gin (search);
 
 -- foreign keys to people and revisions (deleting a user or a story looks these up)
-create index stories_created_by_idx on public.stories (created_by);
-create index stories_updated_by_idx on public.stories (updated_by);
-create index stories_submitted_by_idx on public.stories (submitted_by);
-create index story_revisions_author_idx on public.story_revisions (author);
-create index published_stories_published_by_idx on public.published_stories (published_by);
-create index published_stories_revision_idx on public.published_stories (revision_id);
+create index stories_created_by_idx on open.stories (created_by);
+create index stories_updated_by_idx on open.stories (updated_by);
+create index stories_submitted_by_idx on open.stories (submitted_by);
+create index story_revisions_author_idx on open.story_revisions (author);
+create index published_stories_published_by_idx on open.published_stories (published_by);
+create index published_stories_revision_idx on open.published_stories (revision_id);
 
 -- ---- row-level security ------------------------------------------------------------------------
 
-alter table public.stories enable row level security;
-alter table public.story_revisions enable row level security;
-alter table public.published_stories enable row level security;
+alter table open.stories enable row level security;
+alter table open.story_revisions enable row level security;
+alter table open.published_stories enable row level security;
 
-create policy "staff can read working copies" on public.stories
+create policy "staff can read working copies" on open.stories
   for select to authenticated
-  using ((select private.is_staff()));
+  using ((select open_private.is_staff()));
 
-create policy "staff can read revisions" on public.story_revisions
+create policy "staff can read revisions" on open.story_revisions
   for select to authenticated
-  using ((select private.is_staff()));
+  using ((select open_private.is_staff()));
 
-create policy "everyone can read published stories" on public.published_stories
+create policy "everyone can read published stories" on open.published_stories
   for select to anon, authenticated
   using (true);
 
-revoke all on public.stories, public.story_revisions from anon;
+revoke all on open.stories, open.story_revisions from anon;
 revoke insert, update, delete, truncate
-  on public.stories, public.story_revisions, public.published_stories
+  on open.stories, open.story_revisions, open.published_stories
   from anon, authenticated;
 
 -- ---- views -------------------------------------------------------------------------------------
 
 /** What a feed card needs. Readers load full stories one at a time. */
-create view public.story_cards
+create view open.story_cards
 with (security_invoker = true)
 as
 select
@@ -427,10 +437,10 @@ select
   content -> 'summary' as summary,
   content -> 'timeline' as timeline,
   jsonb_array_length(content -> 'sources') as source_count
-from public.published_stories;
+from open.published_stories;
 
 /** Count of TODO_VERIFY values in a document, reviewer notes excluded. */
-create function private.count_todos(content jsonb)
+create function open_private.count_todos(content jsonb)
 returns integer
 language plpgsql
 immutable
@@ -444,11 +454,11 @@ begin
   case jsonb_typeof(content)
     when 'object' then
       for item in select key, value from jsonb_each(content) where key <> 'verify' loop
-        total := total + private.count_todos(item.value);
+        total := total + open_private.count_todos(item.value);
       end loop;
     when 'array' then
       for item in select value from jsonb_array_elements(content) loop
-        total := total + private.count_todos(item.value);
+        total := total + open_private.count_todos(item.value);
       end loop;
     when 'string' then
       total := (length(content #>> '{}') - length(replace(content #>> '{}', 'TODO_VERIFY', '')))
@@ -459,10 +469,10 @@ begin
   return total;
 end;
 $$;
-grant execute on function private.count_todos(jsonb) to authenticated;
+grant execute on function open_private.count_todos(jsonb) to authenticated;
 
 /** The admin's story list: working copy, state, live or not, who changed it last. */
-create view public.story_admin_list
+create view open.story_admin_list
 with (security_invoker = true)
 as
 select
@@ -482,13 +492,13 @@ select
   p.id is not null as is_live,
   p.first_published_at,
   p.published_at,
-  private.count_todos(s.content) as todo_count
-from public.stories s
-left join public.published_stories p on p.id = s.id
-left join public.staff editor on editor.user_id = s.updated_by
-left join public.staff submitter on submitter.user_id = s.submitted_by;
+  open_private.count_todos(s.content) as todo_count
+from open.stories s
+left join open.published_stories p on p.id = s.id
+left join open.staff editor on editor.user_id = s.updated_by
+left join open.staff submitter on submitter.user_id = s.submitted_by;
 
-revoke all on public.story_admin_list from anon;
+revoke all on open.story_admin_list from anon;
 
 -- ===============================================================================================
 -- supabase/migrations/20260927000300_reference_data.sql
@@ -498,52 +508,52 @@ revoke all on public.story_admin_list from anon;
 -- rules behind the calculator. Admins edit them; readers get them through get_channels() and
 -- get_tax_rules(), which drop the team's `verify` notes.
 
-create table public.channels (
+create table open.channels (
   id text primary key,
   sort_order integer not null default 0,
   content jsonb not null check (content ->> 'id' = id),
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users (id) on delete set null
 );
-comment on table public.channels is 'Official channels (ChannelSchema) a story can point readers to.';
+comment on table open.channels is 'Official channels (ChannelSchema) a story can point readers to.';
 
-create table public.tax_rules (
+create table open.tax_rules (
   id text primary key default 'pit' check (id = 'pit'),
   content jsonb not null,
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users (id) on delete set null
 );
-comment on table public.tax_rules is 'Personal income tax brackets (TaxRulesSchema), a single row.';
+comment on table open.tax_rules is 'Personal income tax brackets (TaxRulesSchema), a single row.';
 
-create trigger channels_touch before update on public.channels
-  for each row execute function private.touch();
-create trigger tax_rules_touch before update on public.tax_rules
-  for each row execute function private.touch();
+create trigger channels_touch before update on open.channels
+  for each row execute function open_private.touch();
+create trigger tax_rules_touch before update on open.tax_rules
+  for each row execute function open_private.touch();
 
-alter table public.channels enable row level security;
-alter table public.tax_rules enable row level security;
+alter table open.channels enable row level security;
+alter table open.tax_rules enable row level security;
 
-create policy "staff can read channels" on public.channels
-  for select to authenticated using ((select private.is_staff()));
-create policy "admins can add channels" on public.channels
-  for insert to authenticated with check ((select private.is_admin()));
-create policy "admins can change channels" on public.channels
+create policy "staff can read channels" on open.channels
+  for select to authenticated using ((select open_private.is_staff()));
+create policy "admins can add channels" on open.channels
+  for insert to authenticated with check ((select open_private.is_admin()));
+create policy "admins can change channels" on open.channels
   for update to authenticated
-  using ((select private.is_admin())) with check ((select private.is_admin()));
-create policy "admins can remove channels" on public.channels
-  for delete to authenticated using ((select private.is_admin()));
+  using ((select open_private.is_admin())) with check ((select open_private.is_admin()));
+create policy "admins can remove channels" on open.channels
+  for delete to authenticated using ((select open_private.is_admin()));
 
-create policy "staff can read tax rules" on public.tax_rules
-  for select to authenticated using ((select private.is_staff()));
-create policy "admins can change tax rules" on public.tax_rules
+create policy "staff can read tax rules" on open.tax_rules
+  for select to authenticated using ((select open_private.is_staff()));
+create policy "admins can change tax rules" on open.tax_rules
   for update to authenticated
-  using ((select private.is_admin())) with check ((select private.is_admin()));
+  using ((select open_private.is_admin())) with check ((select open_private.is_admin()));
 
-revoke all on public.channels, public.tax_rules from anon;
-revoke insert, delete, truncate on public.tax_rules from authenticated;
+revoke all on open.channels, open.tax_rules from anon;
+revoke insert, delete, truncate on open.tax_rules from authenticated;
 
 /** A copy of a JSON value with every `verify` key removed, at any depth. */
-create function private.strip_notes(value jsonb)
+create function open_private.strip_notes(value jsonb)
 returns jsonb
 language plpgsql
 immutable
@@ -554,14 +564,14 @@ begin
   case jsonb_typeof(value)
     when 'object' then
       return coalesce(
-        (select jsonb_object_agg(e.key, private.strip_notes(e.value))
+        (select jsonb_object_agg(e.key, open_private.strip_notes(e.value))
          from jsonb_each(value) as e
          where e.key <> 'verify'),
         '{}'::jsonb
       );
     when 'array' then
       return coalesce(
-        (select jsonb_agg(private.strip_notes(a.value) order by a.ord)
+        (select jsonb_agg(open_private.strip_notes(a.value) order by a.ord)
          from jsonb_array_elements(value) with ordinality as a(value, ord)),
         '[]'::jsonb
       );
@@ -571,28 +581,28 @@ begin
 end;
 $$;
 
-create function public.get_channels()
+create function open.get_channels()
 returns jsonb
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select coalesce(jsonb_agg(private.strip_notes(content) order by sort_order, id), '[]'::jsonb)
-  from public.channels
+  select coalesce(jsonb_agg(open_private.strip_notes(content) order by sort_order, id), '[]'::jsonb)
+  from open.channels
 $$;
 
-create function public.get_tax_rules()
+create function open.get_tax_rules()
 returns jsonb
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select private.strip_notes(content) from public.tax_rules where id = 'pit'
+  select open_private.strip_notes(content) from open.tax_rules where id = 'pit'
 $$;
 
-grant execute on function public.get_channels(), public.get_tax_rules() to anon, authenticated;
+grant execute on function open.get_channels(), open.get_tax_rules() to anon, authenticated;
 
 -- ===============================================================================================
 -- supabase/migrations/20260927000400_json_schemas.sql
@@ -601,7 +611,7 @@ grant execute on function public.get_channels(), public.get_tax_rules() to anon,
 -- generated by scripts/gen-json-schema.ts — do not edit; run `npm run db:json-schema`
 -- JSON Schemas of the zod contract (src/data/schema.ts) for pg_jsonschema checks.
 
-create or replace function private.story_json_schema()
+create or replace function open_private.story_json_schema()
 returns json
 language sql
 immutable
@@ -609,7 +619,7 @@ parallel safe
 set search_path = ''
 as $$ select '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"id":{"type":"string","pattern":"^[a-z0-9]+(-[a-z0-9]+)*$"},"type":{"type":"string","enum":["Хууль","Хуулийн төсөл","УИХ-ын тогтоол","Олон улсын гэрээ","Засгийн газрын тогтоол","Журам","Хөрөнгө оруулалтын төсөл","Засгийн газрын мэдэгдэл"]},"stage":{"type":"string","enum":["Санал авч байна","Өргөн мэдүүлсэн","Хэлэлцэх эсэх","Анхны хэлэлцүүлэг","Эцсийн хэлэлцүүлэг","Батлагдсан","Ерөнхийлөгчийн хориг","Нийтлэгдсэн","Мөрдөж эхэлсэн","Идэвхтэй","Санал авч дууссан","Дүгнэлт гаргасан","Баталсан","Цуцалсан","Танилцуулсан","Хэрэгжиж байна"]},"topics":{"minItems":1,"type":"array","items":{"type":"string","enum":["Татвар","Төсөв ба санхүү","Орон сууц","Боловсрол","Эрүүл мэнд","Ажил ба нийгмийн даатгал","Эрчим хүч","Байгаль орчин","Хот ба дэд бүтэц","Засаглал"]}},"featured":{"type":"boolean"},"order":{"type":"number"},"title":{"type":"string","minLength":1},"officialTitle":{"type":"object","properties":{"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["text","source"],"additionalProperties":false},"summary":{"type":"object","properties":{"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["text","source"],"additionalProperties":false},"publishedAt":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"},"updatedAt":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"},"reviewed":{"type":"object","properties":{"by":{"type":"string","minLength":1},"date":{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}]}},"required":["by","date"],"additionalProperties":false},"timeline":{"type":"array","items":{"type":"object","properties":{"date":{"anyOf":[{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}]},{"type":"null"}]},"dateText":{"type":"string","minLength":1},"label":{"type":"string","minLength":1},"status":{"type":"string","enum":["done","current","upcoming"]},"note":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["date","label","status"],"additionalProperties":false}},"changes":{"type":"array","items":{"type":"object","properties":{"clause":{"type":"string","minLength":1},"plainBefore":{"type":"object","properties":{"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["text","source"],"additionalProperties":false},"plainAfter":{"type":"object","properties":{"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["text","source"],"additionalProperties":false},"lawBefore":{"type":"string"},"lawAfter":{"type":"string","minLength":1},"lawSource":{"type":"string","minLength":1},"effectiveFrom":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}},"required":["clause","plainBefore","plainAfter","lawBefore","lawAfter","lawSource"],"additionalProperties":false}},"keyNumbers":{"type":"array","items":{"type":"object","properties":{"label":{"type":"string","minLength":1},"value":{"type":"string","minLength":1},"note":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["label","value","source"],"additionalProperties":false}},"numberExplainer":{"type":"object","properties":{"question":{"type":"string","minLength":1},"paragraphs":{"minItems":1,"type":"array","items":{"type":"object","properties":{"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["text","source"],"additionalProperties":false}}},"required":["question","paragraphs"],"additionalProperties":false},"meaning":{"type":"array","items":{"type":"object","properties":{"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["text","source"],"additionalProperties":false}},"positions":{"type":"array","items":{"type":"object","properties":{"actor":{"type":"string","minLength":1},"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["actor","text","source"],"additionalProperties":false}},"affects":{"type":"array","items":{"type":"object","properties":{"group":{"type":"string","enum":["Оюутан","Ажилтан","Бизнес эрхлэгч","Иргэн","Эцэг эх","Тэтгэвэр авагч","Ахмад настан","Төрийн албан хаагч","Төрийн байгууллага"]},"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["group","text","source"],"additionalProperties":false}},"evidence":{"type":"array","items":{"type":"object","properties":{"step":{"type":"string","enum":["Бодлого","Төсөв","Үр нөлөөний үнэлгээ","Олон нийтийн санал"]},"items":{"type":"array","items":{"type":"object","properties":{"text":{"type":"string","minLength":1},"source":{"type":"string","minLength":1},"verify":{"type":"string","minLength":1}},"required":["text","source"],"additionalProperties":false}}},"required":["step","items"],"additionalProperties":false}},"calculator":{"type":"string","const":"pit"},"participate":{"type":"array","items":{"type":"object","properties":{"channel":{"type":"string","enum":["d-parliament","legalinfo-bills","legalinfo-regulations","e-mongolia","petition"]},"label":{"type":"string","minLength":1},"url":{"type":"string","pattern":"^https:\\/\\/\\S+$"},"note":{"type":"string","minLength":1}},"required":["channel","label"],"additionalProperties":false}},"relatedStoryIds":{"type":"array","items":{"type":"string","minLength":1}},"sources":{"minItems":1,"type":"array","items":{"type":"object","properties":{"id":{"type":"string","minLength":1},"title":{"type":"string","minLength":1},"publisher":{"type":"string","minLength":1},"url":{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^https:\\/\\/\\S+$"}]},"publishedAt":{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}]},"accessedAt":{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}]},"kind":{"type":"string","enum":["official","media"]},"note":{"type":"string","minLength":1}},"required":["id","title","publisher","url","accessedAt","kind"],"additionalProperties":false}},"corrections":{"type":"array","items":{"type":"object","properties":{"date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"},"text":{"type":"string","minLength":1}},"required":["date","text"],"additionalProperties":false}},"verify":{"type":"array","items":{"type":"string","minLength":1}}},"required":["id","type","stage","topics","featured","title","officialTitle","summary","publishedAt","timeline","meaning","affects","evidence","participate","sources"],"additionalProperties":false}'::json $$;
 
-create or replace function private.channel_json_schema()
+create or replace function open_private.channel_json_schema()
 returns json
 language sql
 immutable
@@ -617,7 +627,7 @@ parallel safe
 set search_path = ''
 as $$ select '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"id":{"type":"string","enum":["d-parliament","legalinfo-bills","legalinfo-regulations","e-mongolia","petition"]},"name":{"type":"string","minLength":1},"url":{"anyOf":[{"type":"string","pattern":"^https:\\/\\/\\S+$"},{"type":"null"}]},"description":{"type":"string","minLength":1},"source":{"type":"object","properties":{"title":{"type":"string","minLength":1},"publisher":{"type":"string","minLength":1},"url":{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^https:\\/\\/\\S+$"}]},"publishedAt":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}},"required":["title","publisher","url"],"additionalProperties":false},"verify":{"type":"string","minLength":1}},"required":["id","name","url","description","source"],"additionalProperties":false}'::json $$;
 
-create or replace function private.tax_rules_json_schema()
+create or replace function open_private.tax_rules_json_schema()
 returns json
 language sql
 immutable
@@ -625,9 +635,9 @@ parallel safe
 set search_path = ''
 as $$ select '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"verified":{"type":"boolean"},"assumption":{"type":"string","minLength":1},"source":{"type":"object","properties":{"title":{"type":"string","minLength":1},"publisher":{"type":"string","minLength":1},"url":{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^https:\\/\\/\\S+$"}]},"publishedAt":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}},"required":["title","publisher","url"],"additionalProperties":false},"lawSource":{"type":"object","properties":{"title":{"type":"string","minLength":1},"publisher":{"type":"string","minLength":1},"url":{"anyOf":[{"type":"string","const":"TODO_VERIFY"},{"type":"string","pattern":"^https:\\/\\/\\S+$"}]},"publishedAt":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$"}},"required":["title","publisher","url"],"additionalProperties":false},"years":{"minItems":1,"type":"array","items":{"type":"object","properties":{"year":{"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},"label":{"type":"string","minLength":1},"brackets":{"minItems":1,"type":"array","items":{"type":"object","properties":{"upTo":{"anyOf":[{"type":"number","exclusiveMinimum":0},{"type":"null"}]},"rate":{"anyOf":[{"type":"number","minimum":0,"maximum":1},{"type":"string","const":"TODO_VERIFY"}]}},"required":["upTo","rate"],"additionalProperties":false}},"verify":{"type":"string","minLength":1}},"required":["year","label","brackets"],"additionalProperties":false}}},"required":["verified","assumption","source","lawSource","years"],"additionalProperties":false}'::json $$;
 
-grant execute on function private.story_json_schema() to authenticated, service_role;
-grant execute on function private.channel_json_schema() to authenticated, service_role;
-grant execute on function private.tax_rules_json_schema() to authenticated, service_role;
+grant execute on function open_private.story_json_schema() to authenticated, service_role;
+grant execute on function open_private.channel_json_schema() to authenticated, service_role;
+grant execute on function open_private.tax_rules_json_schema() to authenticated, service_role;
 
 -- ===============================================================================================
 -- supabase/migrations/20260927000500_story_validation.sql
@@ -636,23 +646,23 @@ grant execute on function private.tax_rules_json_schema() to authenticated, serv
 -- The publish gate. Structure: JSON Schemas generated from zod (20260927000400_json_schemas.sql).
 -- Rules the schema cannot express: story_problems(), the SQL twin of src/lib/validate.ts.
 
-alter table public.published_stories
+alter table open.published_stories
   add constraint published_stories_content_schema
-  check (extensions.jsonb_matches_schema(private.story_json_schema(), content));
+  check (extensions.jsonb_matches_schema(open_private.story_json_schema(), content));
 
-alter table public.channels
+alter table open.channels
   add constraint channels_content_schema
-  check (extensions.jsonb_matches_schema(private.channel_json_schema(), content));
+  check (extensions.jsonb_matches_schema(open_private.channel_json_schema(), content));
 
-alter table public.tax_rules
+alter table open.tax_rules
   add constraint tax_rules_content_schema
-  check (extensions.jsonb_matches_schema(private.tax_rules_json_schema(), content));
+  check (extensions.jsonb_matches_schema(open_private.tax_rules_json_schema(), content));
 
 /**
  * Every source reference in a story with its JSON path, in the order the story page renders
  * them (same as sourceRefs() in src/lib/sources.ts).
  */
-create function private.source_refs(story jsonb)
+create function open_private.source_refs(story jsonb)
 returns table (ord integer, path text, source text)
 language sql
 immutable
@@ -708,7 +718,7 @@ $$;
  * timeline_current_count, timeline_order, featured_meaning, featured_affects, featured_evidence,
  * featured_participate, featured_numbers, unknown_related, unknown_channel.
  */
-create function private.story_problems(story jsonb)
+create function open_private.story_problems(story jsonb)
 returns text[]
 language plpgsql
 stable
@@ -722,11 +732,11 @@ declare
   current_count integer;
   previous_date text;
 begin
-  if not extensions.jsonb_matches_schema(private.story_json_schema(), story) then
+  if not extensions.jsonb_matches_schema(open_private.story_json_schema(), story) then
     return array(
       select 'schema $ ' || e
       from unnest(extensions.jsonschema_validation_errors(
-        private.story_json_schema(), story::json)) as e
+        open_private.story_json_schema(), story::json)) as e
     );
   end if;
 
@@ -740,7 +750,7 @@ begin
       problems := problems || format('duplicate_source $.sources[%s].id', r.idx);
     end if;
   end loop;
-  for r in select path, source from private.source_refs(story) order by ord loop
+  for r in select path, source from open_private.source_refs(story) order by ord loop
     if r.source <> 'TODO_VERIFY' and not (r.source = any (source_ids)) then
       problems := problems || format('unknown_source %s', r.path);
     end if;
@@ -794,7 +804,7 @@ begin
     from jsonb_array_elements(coalesce(story -> 'relatedStoryIds', '[]')) with ordinality as x(v, i)
   loop
     if r.id <> story ->> 'id'
-       and not exists (select 1 from public.stories s where s.id = r.id) then
+       and not exists (select 1 from open.stories s where s.id = r.id) then
       problems := problems || format('unknown_related $.relatedStoryIds[%s]', r.idx);
     end if;
   end loop;
@@ -802,7 +812,7 @@ begin
     select i - 1 as idx, p ->> 'channel' as channel
     from jsonb_array_elements(story -> 'participate') with ordinality as x(p, i)
   loop
-    if not exists (select 1 from public.channels c where c.id = r.channel) then
+    if not exists (select 1 from open.channels c where c.id = r.channel) then
       problems := problems || format('unknown_channel $.participate[%s].channel', r.idx);
     end if;
   end loop;
@@ -812,15 +822,15 @@ end;
 $$;
 
 /** The public snapshot of a story: no reviewer notes, no `draft` flag. */
-create function private.published_content(story jsonb)
+create function open_private.published_content(story jsonb)
 returns jsonb
 language sql
 immutable
 set search_path = ''
-as $$ select private.strip_notes(story) - 'draft' $$;
+as $$ select open_private.strip_notes(story) - 'draft' $$;
 
 /** Problems of a working copy as it would be published (staff; used by the admin as a check). */
-create function public.story_problems(p_content jsonb)
+create function open.story_problems(p_content jsonb)
 returns text[]
 language plpgsql
 stable
@@ -828,13 +838,13 @@ security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('editor');
-  return private.story_problems(p_content);
+  perform open_private.require_role('editor');
+  return open_private.story_problems(p_content);
 end;
 $$;
 
-revoke execute on function public.story_problems(jsonb) from public, anon;
-grant execute on function public.story_problems(jsonb) to authenticated;
+revoke execute on function open.story_problems(jsonb) from public, anon;
+grant execute on function open.story_problems(jsonb) to authenticated;
 
 -- ===============================================================================================
 -- supabase/migrations/20260927000600_workflow.sql
@@ -849,17 +859,17 @@ grant execute on function public.story_problems(jsonb) to authenticated;
 --   Two-person rule: the publisher is not the last person who changed the content.
 
 /** Today's date in Ulaanbaatar as 'YYYY-MM-DD'. */
-create function private.today_ub()
+create function open_private.today_ub()
 returns text
 language sql
 stable
 set search_path = ''
 as $$ select to_char(now() at time zone 'Asia/Ulaanbaatar', 'YYYY-MM-DD') $$;
 
-create function private.add_revision(
+create function open_private.add_revision(
   p_story_id text,
   p_content jsonb,
-  p_action public.revision_action,
+  p_action open.revision_action,
   p_note text default null
 )
 returns bigint
@@ -867,22 +877,22 @@ language sql
 security definer
 set search_path = ''
 as $$
-  insert into public.story_revisions (story_id, content, action, note, author)
+  insert into open.story_revisions (story_id, content, action, note, author)
   values (p_story_id, p_content, p_action, nullif(btrim(p_note), ''), (select auth.uid()))
   returning id
 $$;
 
 /** The working copy, locked for update; 404 when missing, 409 when `p_version` is stale. */
-create function private.lock_story(p_id text, p_version integer)
-returns public.stories
+create function open_private.lock_story(p_id text, p_version integer)
+returns open.stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  story public.stories;
+  story open.stories;
 begin
-  select * into story from public.stories where id = p_id for update;
+  select * into story from open.stories where id = p_id for update;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
@@ -894,7 +904,7 @@ end;
 $$;
 
 /** A client document as a working copy: an object, its `id` forced to the row id, no `draft`. */
-create function private.normalize_content(p_id text, p_content jsonb)
+create function open_private.normalize_content(p_id text, p_content jsonb)
 returns jsonb
 language plpgsql
 immutable
@@ -913,20 +923,20 @@ $$;
 
 -- ---- create ------------------------------------------------------------------------------------
 
-create function public.create_story(
+create function open.create_story(
   p_id text,
   p_content jsonb,
-  p_action public.revision_action default 'create'
+  p_action open.revision_action default 'create'
 )
-returns public.stories
+returns open.stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
+  uid uuid := open_private.require_role('editor');
   doc jsonb;
-  story public.stories;
+  story open.stories;
 begin
   if p_action not in ('create', 'import', 'ai_draft') then
     raise exception 'invalid_action' using errcode = 'PT400';
@@ -934,75 +944,75 @@ begin
   if p_id is null or p_id !~ '^[a-z0-9]+(-[a-z0-9]+)*$' or length(p_id) > 80 then
     raise exception 'invalid_id' using errcode = 'PT400';
   end if;
-  if exists (select 1 from public.stories where id = p_id) then
+  if exists (select 1 from open.stories where id = p_id) then
     raise exception 'id_taken' using errcode = 'PT409';
   end if;
-  doc := private.normalize_content(p_id, p_content);
-  insert into public.stories (id, content, created_by, updated_by)
+  doc := open_private.normalize_content(p_id, p_content);
+  insert into open.stories (id, content, created_by, updated_by)
   values (p_id, doc, uid, uid)
   returning * into story;
-  perform private.add_revision(p_id, doc, p_action);
+  perform open_private.add_revision(p_id, doc, p_action);
   return story;
 end;
 $$;
 
 -- ---- save / restore ----------------------------------------------------------------------------
 
-create function private.apply_content(
+create function open_private.apply_content(
   p_id text,
   p_content jsonb,
   p_version integer,
-  p_action public.revision_action,
+  p_action open.revision_action,
   p_note text default null
 )
-returns public.stories
+returns open.stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
-  story public.stories := private.lock_story(p_id, p_version);
-  doc jsonb := private.normalize_content(p_id, p_content);
+  uid uuid := open_private.require_role('editor');
+  story open.stories := open_private.lock_story(p_id, p_version);
+  doc jsonb := open_private.normalize_content(p_id, p_content);
 begin
   if doc = story.content then
     return story;
   end if;
-  update public.stories
+  update open.stories
   set content = doc,
-      state = case when state = 'published' then 'draft'::public.story_state else state end,
+      state = case when state = 'published' then 'draft'::open.story_state else state end,
       version = version + 1,
       updated_by = uid,
       updated_at = now()
   where id = p_id
   returning * into story;
-  perform private.add_revision(p_id, doc, p_action, p_note);
+  perform open_private.add_revision(p_id, doc, p_action, p_note);
   return story;
 end;
 $$;
 
-create function public.save_story(p_id text, p_content jsonb, p_version integer)
-returns public.stories
+create function open.save_story(p_id text, p_content jsonb, p_version integer)
+returns open.stories
 language sql
 security definer
 set search_path = ''
-as $$ select * from private.apply_content(p_id, p_content, p_version, 'save') $$;
+as $$ select * from open_private.apply_content(p_id, p_content, p_version, 'save') $$;
 
-create function public.restore_revision(p_revision_id bigint, p_version integer)
-returns public.stories
+create function open.restore_revision(p_revision_id bigint, p_version integer)
+returns open.stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  revision public.story_revisions;
+  revision open.story_revisions;
 begin
-  perform private.require_role('editor');
-  select * into revision from public.story_revisions where id = p_revision_id;
+  perform open_private.require_role('editor');
+  select * into revision from open.story_revisions where id = p_revision_id;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  return private.apply_content(
+  return open_private.apply_content(
     revision.story_id, revision.content, p_version, 'restore', format('#%s', revision.id)
   );
 end;
@@ -1010,50 +1020,50 @@ $$;
 
 -- ---- review ------------------------------------------------------------------------------------
 
-create function public.submit_story(p_id text, p_version integer, p_note text default null)
-returns public.stories
+create function open.submit_story(p_id text, p_version integer, p_note text default null)
+returns open.stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
-  story public.stories := private.lock_story(p_id, p_version);
+  uid uuid := open_private.require_role('editor');
+  story open.stories := open_private.lock_story(p_id, p_version);
 begin
   if story.state not in ('draft', 'changes_requested') then
     raise exception 'invalid_state' using errcode = 'PT409', detail = story.state::text;
   end if;
-  update public.stories
+  update open.stories
   set state = 'in_review', submitted_by = uid, submitted_at = now(), version = version + 1
   where id = p_id
   returning * into story;
-  perform private.add_revision(p_id, story.content, 'submit', p_note);
+  perform open_private.add_revision(p_id, story.content, 'submit', p_note);
   return story;
 end;
 $$;
 
-create function public.request_changes(p_id text, p_version integer, p_note text)
-returns public.stories
+create function open.request_changes(p_id text, p_version integer, p_note text)
+returns open.stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  story public.stories;
+  story open.stories;
 begin
-  perform private.require_role('reviewer');
-  story := private.lock_story(p_id, p_version);
+  perform open_private.require_role('reviewer');
+  story := open_private.lock_story(p_id, p_version);
   if length(btrim(coalesce(p_note, ''))) = 0 then
     raise exception 'note_required' using errcode = 'PT400';
   end if;
   if story.state <> 'in_review' then
     raise exception 'invalid_state' using errcode = 'PT409', detail = story.state::text;
   end if;
-  update public.stories
+  update open.stories
   set state = 'changes_requested', review_note = btrim(p_note), version = version + 1
   where id = p_id
   returning * into story;
-  perform private.add_revision(p_id, story.content, 'request_changes', p_note);
+  perform open_private.add_revision(p_id, story.content, 'request_changes', p_note);
   return story;
 end;
 $$;
@@ -1067,39 +1077,39 @@ $$;
  *   corrections  + { date: today, text: p_correction } when a correction is given
  * then checks story_problems() and writes the snapshot without reviewer notes.
  */
-create function public.publish_story(
+create function open.publish_story(
   p_id text,
   p_version integer,
   p_note text default null,
   p_correction text default null
 )
-returns public.published_stories
+returns open.published_stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('reviewer');
-  story public.stories := private.lock_story(p_id, p_version);
-  today text := private.today_ub();
+  uid uuid := open_private.require_role('reviewer');
+  story open.stories := open_private.lock_story(p_id, p_version);
+  today text := open_private.today_ub();
   reviewer text;
   was_published boolean;
   correction text := nullif(btrim(p_correction), '');
   doc jsonb := story.content;
   problems text[];
   revision_id bigint;
-  result public.published_stories;
+  result open.published_stories;
 begin
   if story.state = 'published' then
     raise exception 'already_published' using errcode = 'PT409';
   end if;
-  if (select require_two_person_review from public.settings) and story.updated_by = uid then
+  if (select require_two_person_review from open.settings) and story.updated_by = uid then
     raise exception 'same_person' using errcode = 'PT403';
   end if;
 
-  select name into reviewer from public.staff where user_id = uid;
+  select name into reviewer from open.staff where user_id = uid;
   was_published := exists (
-    select 1 from public.story_revisions where story_id = p_id and action = 'publish'
+    select 1 from open.story_revisions where story_id = p_id and action = 'publish'
   );
 
   if was_published and doc ->> 'publishedAt' ~ '^\d{4}-\d{2}-\d{2}$' then
@@ -1119,15 +1129,15 @@ begin
     );
   end if;
 
-  problems := private.story_problems(doc);
+  problems := open_private.story_problems(doc);
   if cardinality(problems) > 0 then
     raise exception 'story_problems' using errcode = 'PT422', detail = array_to_json(problems)::text;
   end if;
 
-  revision_id := private.add_revision(p_id, doc, 'publish', p_note);
-  insert into public.published_stories as p
+  revision_id := open_private.add_revision(p_id, doc, 'publish', p_note);
+  insert into open.published_stories as p
     (id, content, revision_id, first_published_at, published_at, published_by)
-  values (p_id, private.published_content(doc), revision_id, now(), now(), uid)
+  values (p_id, open_private.published_content(doc), revision_id, now(), now(), uid)
   on conflict (id) do update
     set content = excluded.content,
         revision_id = excluded.revision_id,
@@ -1136,52 +1146,52 @@ begin
   returning * into result;
 
   -- the working copy keeps its reviewer notes and now matches what is live
-  update public.stories
+  update open.stories
   set content = doc, state = 'published', review_note = null, version = version + 1
   where id = p_id;
   return result;
 end;
 $$;
 
-create function public.unpublish_story(p_id text, p_version integer, p_note text)
-returns public.stories
+create function open.unpublish_story(p_id text, p_version integer, p_note text)
+returns open.stories
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  story public.stories;
+  story open.stories;
 begin
-  perform private.require_role('reviewer');
-  story := private.lock_story(p_id, p_version);
+  perform open_private.require_role('reviewer');
+  story := open_private.lock_story(p_id, p_version);
   if length(btrim(coalesce(p_note, ''))) = 0 then
     raise exception 'note_required' using errcode = 'PT400';
   end if;
-  delete from public.published_stories where id = p_id;
+  delete from open.published_stories where id = p_id;
   if not found then
     raise exception 'not_published' using errcode = 'PT409';
   end if;
-  update public.stories
+  update open.stories
   set state = 'draft', version = version + 1
   where id = p_id
   returning * into story;
-  perform private.add_revision(p_id, story.content, 'unpublish', p_note);
+  perform open_private.add_revision(p_id, story.content, 'unpublish', p_note);
   return story;
 end;
 $$;
 
-create function public.delete_story(p_id text)
+create function open.delete_story(p_id text)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('admin');
-  if exists (select 1 from public.published_stories where id = p_id) then
+  perform open_private.require_role('admin');
+  if exists (select 1 from open.published_stories where id = p_id) then
     raise exception 'is_published' using errcode = 'PT409';
   end if;
-  delete from public.stories where id = p_id;
+  delete from open.stories where id = p_id;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
@@ -1191,25 +1201,25 @@ $$;
 -- ---- grants ------------------------------------------------------------------------------------
 
 revoke execute on function
-  public.create_story(text, jsonb, public.revision_action),
-  public.save_story(text, jsonb, integer),
-  public.restore_revision(bigint, integer),
-  public.submit_story(text, integer, text),
-  public.request_changes(text, integer, text),
-  public.publish_story(text, integer, text, text),
-  public.unpublish_story(text, integer, text),
-  public.delete_story(text)
+  open.create_story(text, jsonb, open.revision_action),
+  open.save_story(text, jsonb, integer),
+  open.restore_revision(bigint, integer),
+  open.submit_story(text, integer, text),
+  open.request_changes(text, integer, text),
+  open.publish_story(text, integer, text, text),
+  open.unpublish_story(text, integer, text),
+  open.delete_story(text)
   from public, anon;
 
 grant execute on function
-  public.create_story(text, jsonb, public.revision_action),
-  public.save_story(text, jsonb, integer),
-  public.restore_revision(bigint, integer),
-  public.submit_story(text, integer, text),
-  public.request_changes(text, integer, text),
-  public.publish_story(text, integer, text, text),
-  public.unpublish_story(text, integer, text),
-  public.delete_story(text)
+  open.create_story(text, jsonb, open.revision_action),
+  open.save_story(text, jsonb, integer),
+  open.restore_revision(bigint, integer),
+  open.submit_story(text, integer, text),
+  open.request_changes(text, integer, text),
+  open.publish_story(text, integer, text, text),
+  open.unpublish_story(text, integer, text),
+  open.delete_story(text)
   to authenticated;
 
 -- ===============================================================================================
@@ -1220,7 +1230,7 @@ grant execute on function
 -- session (so the admin check runs here) and uses the service role only to send the invitation.
 
 /** The auth account with this email, or null (admins only). */
-create function public.staff_user_id_by_email(p_email text)
+create function open.staff_user_id_by_email(p_email text)
 returns uuid
 language plpgsql
 stable
@@ -1228,22 +1238,22 @@ security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('admin');
+  perform open_private.require_role('admin');
   return (select id from auth.users where lower(email) = lower(btrim(p_email)) limit 1);
 end;
 $$;
 
 /** Give an existing auth account a place on the team, or change its name and role (admins only). */
-create function public.add_staff(p_user_id uuid, p_name text, p_role public.staff_role)
-returns public.staff
+create function open.add_staff(p_user_id uuid, p_name text, p_role open.staff_role)
+returns open.staff
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  member public.staff;
+  member open.staff;
 begin
-  perform private.require_role('admin');
+  perform open_private.require_role('admin');
   if length(btrim(coalesce(p_name, ''))) not between 1 and 100 then
     raise exception 'invalid_name' using errcode = 'PT400';
   end if;
@@ -1251,9 +1261,9 @@ begin
     raise exception 'not_found' using errcode = 'PT404';
   end if;
   if p_role <> 'admin' then
-    perform private.assert_not_last_admin(p_user_id);
+    perform open_private.assert_not_last_admin(p_user_id);
   end if;
-  insert into public.staff (user_id, name, role)
+  insert into open.staff (user_id, name, role)
   values (p_user_id, btrim(p_name), p_role)
   on conflict (user_id) do update set name = excluded.name, role = excluded.role
   returning * into member;
@@ -1261,11 +1271,11 @@ begin
 end;
 $$;
 
-revoke execute on function public.staff_user_id_by_email(text),
-  public.add_staff(uuid, text, public.staff_role)
+revoke execute on function open.staff_user_id_by_email(text),
+  open.add_staff(uuid, text, open.staff_role)
   from public, anon;
-grant execute on function public.staff_user_id_by_email(text),
-  public.add_staff(uuid, text, public.staff_role)
+grant execute on function open.staff_user_id_by_email(text),
+  open.add_staff(uuid, text, open.staff_role)
   to authenticated;
 
 -- ===============================================================================================
@@ -1276,7 +1286,7 @@ grant execute on function public.staff_user_id_by_email(text),
 
 -- ---- throttling --------------------------------------------------------------------------------
 
-create table private.rate_limits (
+create table open_private.rate_limits (
   key text not null,
   window_start timestamptz not null,
   count integer not null default 0,
@@ -1288,7 +1298,7 @@ create table private.rate_limits (
  * writes that one. Hosted Supabase sits behind Cloudflare (cf-connecting-ip); locally the
  * gateway sets x-real-ip.
  */
-create function private.client_address()
+create function open_private.client_address()
 returns text
 language sql
 stable
@@ -1306,7 +1316,7 @@ as $$
 $$;
 
 /** Count one use of `key` in the current window; 429 when there were `max` already. */
-create function private.throttle(p_key text, p_max integer, p_window interval)
+create function open_private.throttle(p_key text, p_max integer, p_window interval)
 returns void
 language plpgsql
 security definer
@@ -1317,7 +1327,7 @@ declare
   bucket timestamptz := to_timestamp(floor(extract(epoch from now()) / seconds) * seconds);
   used integer;
 begin
-  insert into private.rate_limits as r (key, window_start, count)
+  insert into open_private.rate_limits as r (key, window_start, count)
   values (p_key, bucket, 1)
   on conflict (key, window_start) do update set count = r.count + 1
   returning count into used;
@@ -1326,16 +1336,16 @@ begin
   end if;
   -- keep the table small: now and then drop windows older than a day
   if random() < 0.01 then
-    delete from private.rate_limits where window_start < now() - interval '1 day';
+    delete from open_private.rate_limits where window_start < now() - interval '1 day';
   end if;
 end;
 $$;
 
 -- ---- error reports -----------------------------------------------------------------------------
 
-create table public.reports (
+create table open.reports (
   id bigint generated always as identity primary key,
-  story_id text not null references public.stories (id) on delete cascade,
+  story_id text not null references open.stories (id) on delete cascade,
   message text not null check (length(message) between 5 and 2000),
   contact text check (length(contact) <= 200),
   status text not null default 'new' check (status in ('new', 'resolved', 'dismissed')),
@@ -1344,20 +1354,20 @@ create table public.reports (
   resolved_by uuid references auth.users (id) on delete set null,
   resolved_at timestamptz
 );
-comment on table public.reports is
+comment on table open.reports is
   'Readers'' error reports on published stories. Written through submit_report(); staff read.';
-create index reports_status_idx on public.reports (status, created_at desc);
-create index reports_story_idx on public.reports (story_id);
-create index reports_resolved_by_idx on public.reports (resolved_by);
+create index reports_status_idx on open.reports (status, created_at desc);
+create index reports_story_idx on open.reports (story_id);
+create index reports_resolved_by_idx on open.reports (resolved_by);
 
-alter table public.reports enable row level security;
-create policy "staff can read reports" on public.reports
-  for select to authenticated using ((select private.is_staff()));
-revoke all on public.reports from anon;
-revoke insert, update, delete, truncate on public.reports from authenticated;
+alter table open.reports enable row level security;
+create policy "staff can read reports" on open.reports
+  for select to authenticated using ((select open_private.is_staff()));
+revoke all on open.reports from anon;
+revoke insert, update, delete, truncate on open.reports from authenticated;
 
 /** A reader reports an error in a published story. Limited to 10 an hour per address. */
-create function public.submit_report(
+create function open.submit_report(
   p_story_id text,
   p_message text,
   p_contact text default null
@@ -1374,30 +1384,30 @@ begin
   if length(message) not between 5 and 2000 or length(coalesce(contact, '')) > 200 then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  if not exists (select 1 from public.published_stories where id = p_story_id) then
+  if not exists (select 1 from open.published_stories where id = p_story_id) then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  perform private.throttle('report:' || private.client_address(), 10, interval '1 hour');
-  perform private.throttle('report-story:' || p_story_id, 50, interval '1 hour');
-  insert into public.reports (story_id, message, contact) values (p_story_id, message, contact);
+  perform open_private.throttle('report:' || open_private.client_address(), 10, interval '1 hour');
+  perform open_private.throttle('report-story:' || p_story_id, 50, interval '1 hour');
+  insert into open.reports (story_id, message, contact) values (p_story_id, message, contact);
 end;
 $$;
 
 /** Staff close a report: resolved (fixed) or dismissed (nothing to fix). */
-create function public.resolve_report(p_id bigint, p_status text, p_note text default null)
-returns public.reports
+create function open.resolve_report(p_id bigint, p_status text, p_note text default null)
+returns open.reports
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
-  report public.reports;
+  uid uuid := open_private.require_role('editor');
+  report open.reports;
 begin
   if p_status not in ('new', 'resolved', 'dismissed') then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  update public.reports
+  update open.reports
   set status = p_status,
       resolution_note = nullif(btrim(coalesce(p_note, '')), ''),
       resolved_by = case when p_status = 'new' then null else uid end,
@@ -1411,8 +1421,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.resolve_report(bigint, text, text) from public, anon;
-grant execute on function public.resolve_report(bigint, text, text) to authenticated;
+revoke execute on function open.resolve_report(bigint, text, text) from public, anon;
+grant execute on function open.resolve_report(bigint, text, text) to authenticated;
 
 -- ---- search ------------------------------------------------------------------------------------
 
@@ -1420,8 +1430,8 @@ grant execute on function public.resolve_report(bigint, text, text) to authentic
  * Published stories matching every word of the query as a word prefix ("татвар" finds
  * "татварын"), best matches first. Up to 8 words, 50 results.
  */
-create function public.search_stories(p_query text)
-returns setof public.story_cards
+create function open.search_stories(p_query text)
+returns setof open.story_cards
 language plpgsql
 stable
 set search_path = ''
@@ -1447,8 +1457,8 @@ begin
   );
   return query
     select c.*
-    from public.story_cards c
-    join public.published_stories p on p.id = c.id
+    from open.story_cards c
+    join open.published_stories p on p.id = c.id
     where p.search @@ query
     order by ts_rank(p.search, query) desc, c.sort_order nulls last, c.published_on desc
     limit 50;
@@ -1465,14 +1475,14 @@ $$;
 
 create extension if not exists pg_net with schema extensions;
 
-create function private.call_deploy_hook()
+create function open_private.call_deploy_hook()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  hook text := (select deploy_hook_url from public.settings);
+  hook text := (select deploy_hook_url from open.settings);
 begin
   if hook is not null then
     -- asynchronous: the publish does not wait for the host
@@ -1483,8 +1493,8 @@ end;
 $$;
 
 create trigger published_stories_deploy_hook
-  after insert or update or delete on public.published_stories
-  for each statement execute function private.call_deploy_hook();
+  after insert or update or delete on open.published_stories
+  for each statement execute function open_private.call_deploy_hook();
 
 -- ===============================================================================================
 -- supabase/migrations/20260927001000_alerts.sql
@@ -1505,14 +1515,14 @@ create extension if not exists pg_cron;
 -- ---- calling edge functions from the database --------------------------------------------------
 
 /** POST to an edge function (fire and forget); nothing happens while settings.functions_url is unset. */
-create function private.call_function(p_name text, p_body jsonb default '{}')
+create function open_private.call_function(p_name text, p_body jsonb default '{}')
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  base text := (select functions_url from public.settings);
+  base text := (select functions_url from open.settings);
 begin
   if base is not null then
     perform net.http_post(url := base || '/' || p_name, body := p_body, timeout_milliseconds := 10000);
@@ -1522,7 +1532,7 @@ $$;
 
 -- ---- tables ------------------------------------------------------------------------------------
 
-create table public.subscribers (
+create table open.subscribers (
   id uuid primary key default gen_random_uuid(),
   email text not null unique
     check (email = lower(email) and length(email) <= 254 and email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
@@ -1531,17 +1541,17 @@ create table public.subscribers (
   confirmed_at timestamptz,
   created_at timestamptz not null default now()
 );
-comment on table public.subscribers is 'Readers who follow stories by email. Admins only.';
+comment on table open.subscribers is 'Readers who follow stories by email. Admins only.';
 
-create table public.subscriptions (
-  subscriber_id uuid not null references public.subscribers (id) on delete cascade,
-  story_id text not null references public.stories (id) on delete cascade,
+create table open.subscriptions (
+  subscriber_id uuid not null references open.subscribers (id) on delete cascade,
+  story_id text not null references open.stories (id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (subscriber_id, story_id)
 );
-create index subscriptions_story_idx on public.subscriptions (story_id);
+create index subscriptions_story_idx on open.subscriptions (story_id);
 
-create table public.email_outbox (
+create table open.email_outbox (
   id bigint generated always as identity primary key,
   to_email text not null,
   template text not null check (template in ('confirm', 'stage_change')),
@@ -1554,42 +1564,42 @@ create table public.email_outbox (
   claimed_at timestamptz,
   sent_at timestamptz
 );
-comment on table public.email_outbox is
+comment on table open.email_outbox is
   'Emails waiting to be sent by the send-emails edge function. Admins can read it.';
-create index email_outbox_pending_idx on public.email_outbox (status, id);
+create index email_outbox_pending_idx on open.email_outbox (status, id);
 
-alter table public.subscribers enable row level security;
-alter table public.subscriptions enable row level security;
-alter table public.email_outbox enable row level security;
+alter table open.subscribers enable row level security;
+alter table open.subscriptions enable row level security;
+alter table open.email_outbox enable row level security;
 
-create policy "admins can read subscribers" on public.subscribers
-  for select to authenticated using ((select private.is_admin()));
-create policy "admins can read subscriptions" on public.subscriptions
-  for select to authenticated using ((select private.is_admin()));
-create policy "admins can read the outbox" on public.email_outbox
-  for select to authenticated using ((select private.is_admin()));
+create policy "admins can read subscribers" on open.subscribers
+  for select to authenticated using ((select open_private.is_admin()));
+create policy "admins can read subscriptions" on open.subscriptions
+  for select to authenticated using ((select open_private.is_admin()));
+create policy "admins can read the outbox" on open.email_outbox
+  for select to authenticated using ((select open_private.is_admin()));
 
-revoke all on public.subscribers, public.subscriptions, public.email_outbox from anon;
+revoke all on open.subscribers, open.subscriptions, open.email_outbox from anon;
 revoke insert, update, delete, truncate
-  on public.subscribers, public.subscriptions, public.email_outbox
+  on open.subscribers, open.subscriptions, open.email_outbox
   from authenticated;
 
 -- A new email goes out right away (the function also runs every 10 minutes, for retries).
-create function private.outbox_wake()
+create function open_private.outbox_wake()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  perform private.call_function('send-emails');
+  perform open_private.call_function('send-emails');
   return null;
 end;
 $$;
 
 create trigger email_outbox_wake
-  after insert on public.email_outbox
-  for each statement execute function private.outbox_wake();
+  after insert on open.email_outbox
+  for each statement execute function open_private.outbox_wake();
 
 -- ---- what readers can do -----------------------------------------------------------------------
 
@@ -1597,7 +1607,7 @@ create trigger email_outbox_wake
  * Follow a published story. The first time an address follows anything, it gets a confirmation
  * email; until then nothing else is sent to it. Limited per address and per mailbox.
  */
-create function public.subscribe(p_email text, p_story_id text)
+create function open.subscribe(p_email text, p_story_id text)
 returns void
 language plpgsql
 security definer
@@ -1606,28 +1616,28 @@ as $$
 declare
   address text := lower(btrim(coalesce(p_email, '')));
   story_title text;
-  subscriber public.subscribers;
+  subscriber open.subscribers;
 begin
   if length(address) > 254 or address !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  select content ->> 'title' into story_title from public.published_stories where id = p_story_id;
+  select content ->> 'title' into story_title from open.published_stories where id = p_story_id;
   if story_title is null then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  perform private.throttle('subscribe:' || private.client_address(), 10, interval '1 hour');
+  perform open_private.throttle('subscribe:' || open_private.client_address(), 10, interval '1 hour');
   -- nobody can use this form to flood someone else's mailbox
-  perform private.throttle('subscribe-email:' || address, 3, interval '1 hour');
+  perform open_private.throttle('subscribe-email:' || address, 3, interval '1 hour');
 
-  insert into public.subscribers (email) values (address)
+  insert into open.subscribers (email) values (address)
   on conflict (email) do update set email = excluded.email
   returning * into subscriber;
-  insert into public.subscriptions (subscriber_id, story_id)
+  insert into open.subscriptions (subscriber_id, story_id)
   values (subscriber.id, p_story_id)
   on conflict do nothing;
 
   if subscriber.confirmed_at is null then
-    insert into public.email_outbox (to_email, template, data)
+    insert into open.email_outbox (to_email, template, data)
     values (
       address, 'confirm',
       jsonb_build_object('token', subscriber.token, 'story_id', p_story_id, 'title', story_title)
@@ -1637,16 +1647,16 @@ end;
 $$;
 
 /** The confirmation link: the address becomes active; returns the stories it follows (or null). */
-create function public.confirm_subscription(p_token uuid)
+create function open.confirm_subscription(p_token uuid)
 returns jsonb
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  subscriber public.subscribers;
+  subscriber open.subscribers;
 begin
-  update public.subscribers
+  update open.subscribers
   set confirmed_at = coalesce(confirmed_at, now())
   where token = p_token
   returning * into subscriber;
@@ -1655,8 +1665,8 @@ begin
   end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object('id', p.id, 'title', p.content ->> 'title') order by s.created_at)
-    from public.subscriptions s
-    join public.published_stories p on p.id = s.story_id
+    from open.subscriptions s
+    join open.published_stories p on p.id = s.story_id
     where s.subscriber_id = subscriber.id
   ), '[]'::jsonb);
 end;
@@ -1666,30 +1676,30 @@ $$;
  * Stop following one story, or every story when p_story_id is null. An address that follows
  * nothing any more is deleted. True when the token was known.
  */
-create function public.unsubscribe(p_token uuid, p_story_id text default null)
+create function open.unsubscribe(p_token uuid, p_story_id text default null)
 returns boolean
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  target uuid := (select id from public.subscribers where token = p_token);
+  target uuid := (select id from open.subscribers where token = p_token);
 begin
   if target is null then
     return false;
   end if;
-  delete from public.subscriptions s
+  delete from open.subscriptions s
   where s.subscriber_id = target
     and (p_story_id is null or s.story_id = p_story_id);
-  delete from public.subscribers s
+  delete from open.subscribers s
   where s.id = target
-    and not exists (select 1 from public.subscriptions x where x.subscriber_id = s.id);
+    and not exists (select 1 from open.subscriptions x where x.subscriber_id = s.id);
   return true;
 end;
 $$;
 
 /** How many confirmed readers follow a story (staff; no addresses). */
-create function public.follower_count(p_story_id text)
+create function open.follower_count(p_story_id text)
 returns integer
 language plpgsql
 stable
@@ -1697,29 +1707,29 @@ security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('editor');
+  perform open_private.require_role('editor');
   return (
     select count(*)
-    from public.subscriptions s
-    join public.subscribers r on r.id = s.subscriber_id
+    from open.subscriptions s
+    join open.subscribers r on r.id = s.subscriber_id
     where s.story_id = p_story_id and r.confirmed_at is not null
   );
 end;
 $$;
 
-revoke execute on function public.follower_count(text) from public, anon;
-grant execute on function public.follower_count(text) to authenticated;
+revoke execute on function open.follower_count(text) from public, anon;
+grant execute on function open.follower_count(text) to authenticated;
 
 -- ---- stage changes -----------------------------------------------------------------------------
 
-create function private.notify_stage_change()
+create function open_private.notify_stage_change()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  insert into public.email_outbox (to_email, template, data)
+  insert into open.email_outbox (to_email, template, data)
   select r.email, 'stage_change', jsonb_build_object(
     'token', r.token,
     'story_id', new.id,
@@ -1727,18 +1737,18 @@ begin
     'old_stage', old.stage,
     'new_stage', new.stage
   )
-  from public.subscriptions s
-  join public.subscribers r on r.id = s.subscriber_id
+  from open.subscriptions s
+  join open.subscribers r on r.id = s.subscriber_id
   where s.story_id = new.id and r.confirmed_at is not null;
   return null;
 end;
 $$;
 
 create trigger published_stories_stage_change
-  after update on public.published_stories
+  after update on open.published_stories
   for each row
   when (old.stage is distinct from new.stage)
-  execute function private.notify_stage_change();
+  execute function open_private.notify_stage_change();
 
 -- ---- delivery (the send-emails edge function, with the service role) ---------------------------
 
@@ -1746,17 +1756,17 @@ create trigger published_stories_stage_change
  * Take up to p_limit emails to send: pending ones, and ones stuck in 'sending' for 10 minutes
  * (a crashed run). Concurrent runs never take the same email. Includes the site URL for links.
  */
-create function public.claim_emails(p_limit integer default 50)
+create function open.claim_emails(p_limit integer default 50)
 returns table (id bigint, to_email text, template text, data jsonb, attempts integer, site_url text)
 language sql
 security definer
 set search_path = ''
 as $$
   with claimed as (
-    update public.email_outbox o
+    update open.email_outbox o
     set status = 'sending', attempts = o.attempts + 1, claimed_at = now()
     where o.id in (
-      select x.id from public.email_outbox x
+      select x.id from open.email_outbox x
       where x.status = 'pending'
          or (x.status = 'sending' and x.claimed_at < now() - interval '10 minutes')
       order by x.id
@@ -1765,17 +1775,17 @@ as $$
     )
     returning o.id, o.to_email, o.template, o.data, o.attempts
   )
-  select c.*, (select s.site_url from public.settings s) from claimed c order by c.id
+  select c.*, (select s.site_url from open.settings s) from claimed c order by c.id
 $$;
 
 /** Record how a claimed email went: sent, skipped (no mail service configured) or failed. */
-create function public.finish_email(p_id bigint, p_status text, p_error text default null)
+create function open.finish_email(p_id bigint, p_status text, p_error text default null)
 returns void
 language sql
 security definer
 set search_path = ''
 as $$
-  update public.email_outbox
+  update open.email_outbox
   set status = case
         -- a failed email is tried again (next run) up to 5 times
         when p_status = 'failed' and attempts < 5 then 'pending'
@@ -1786,13 +1796,13 @@ as $$
   where id = p_id
 $$;
 
-revoke execute on function public.claim_emails(integer), public.finish_email(bigint, text, text)
+revoke execute on function open.claim_emails(integer), open.finish_email(bigint, text, text)
   from public, anon, authenticated;
-grant execute on function public.claim_emails(integer), public.finish_email(bigint, text, text)
+grant execute on function open.claim_emails(integer), open.finish_email(bigint, text, text)
   to service_role;
 
 -- retries, and anything queued while the functions URL was not set yet
-select cron.schedule('send-emails', '*/10 * * * *', $$ select private.call_function('send-emails') $$);
+select cron.schedule('send-emails', '*/10 * * * *', $$ select open_private.call_function('send-emails') $$);
 
 -- ===============================================================================================
 -- supabase/migrations/20260927001100_ai_drafts.sql
@@ -1802,7 +1812,7 @@ select cron.schedule('send-emails', '*/10 * * * *', $$ select private.call_funct
 -- writes a draft story from it in the background, saved as a working copy (revision 'ai_draft').
 -- A human then checks every sentence, and a second person publishes. This table tracks the jobs.
 
-create table public.ai_drafts (
+create table open.ai_drafts (
   id bigint generated always as identity primary key,
   story_id text not null check (story_id ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and length(story_id) <= 80),
   status text not null default 'running' check (status in ('running', 'done', 'failed')),
@@ -1816,33 +1826,33 @@ create table public.ai_drafts (
   created_at timestamptz not null default now(),
   finished_at timestamptz
 );
-comment on table public.ai_drafts is 'AI draft jobs (the ai-draft edge function writes them).';
-create index ai_drafts_created_idx on public.ai_drafts (created_at desc);
-create index ai_drafts_created_by_idx on public.ai_drafts (created_by);
+comment on table open.ai_drafts is 'AI draft jobs (the ai-draft edge function writes them).';
+create index ai_drafts_created_idx on open.ai_drafts (created_at desc);
+create index ai_drafts_created_by_idx on open.ai_drafts (created_by);
 
-alter table public.ai_drafts enable row level security;
-create policy "staff can read ai drafts" on public.ai_drafts
-  for select to authenticated using ((select private.is_staff()));
-revoke all on public.ai_drafts from anon;
-revoke insert, update, delete, truncate on public.ai_drafts from authenticated;
+alter table open.ai_drafts enable row level security;
+create policy "staff can read ai drafts" on open.ai_drafts
+  for select to authenticated using ((select open_private.is_staff()));
+revoke all on open.ai_drafts from anon;
+revoke insert, update, delete, truncate on open.ai_drafts from authenticated;
 
 /**
  * A job that has been running for 15 minutes has been cut off (the function's time limit):
  * mark it failed so the admin stops waiting. Run by the ai-draft function before it starts one.
  */
-create function public.expire_ai_drafts()
+create function open.expire_ai_drafts()
 returns void
 language sql
 security definer
 set search_path = ''
 as $$
-  update public.ai_drafts
+  update open.ai_drafts
   set status = 'failed', error = 'timeout', finished_at = now()
   where status = 'running' and created_at < now() - interval '15 minutes'
 $$;
 
-revoke execute on function public.expire_ai_drafts() from public, anon, authenticated;
-grant execute on function public.expire_ai_drafts() to service_role;
+revoke execute on function open.expire_ai_drafts() from public, anon, authenticated;
+grant execute on function open.expire_ai_drafts() to service_role;
 
 -- ===============================================================================================
 -- supabase/migrations/20260927001200_document_watcher.sql
@@ -1855,7 +1865,7 @@ grant execute on function public.expire_ai_drafts() to service_role;
 
 -- public https pages only: a host name with a dot and a letter TLD (no IP address, no localhost,
 -- no port, no user info). The edge function applies the same rule to every redirect.
-create function private.is_watchable_url(p_url text)
+create function open_private.is_watchable_url(p_url text)
 returns boolean
 language sql
 immutable
@@ -1865,11 +1875,11 @@ as $$
     and p_url ~ '^https://[A-Za-z0-9.-]+\.([A-Za-z]{2,}|xn--[A-Za-z0-9-]+)([/?#][^[:space:]]*)?$'
 $$;
 
-create table public.watched_documents (
+create table open.watched_documents (
   id bigint generated always as identity primary key,
-  url text not null unique check (private.is_watchable_url(url)),
+  url text not null unique check (open_private.is_watchable_url(url)),
   label text not null check (label = btrim(label) and length(label) between 1 and 200),
-  story_id text references public.stories (id) on delete set null,
+  story_id text references open.stories (id) on delete set null,
   active boolean not null default true,
   -- the last successful fetch: hash of its text (of its bytes when it is not text), and the text
   last_hash text,
@@ -1881,13 +1891,13 @@ create table public.watched_documents (
   created_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
 );
-comment on table public.watched_documents is 'Official pages the watch-documents function checks.';
-create index watched_documents_story_idx on public.watched_documents (story_id);
-create index watched_documents_created_by_idx on public.watched_documents (created_by);
+comment on table open.watched_documents is 'Official pages the watch-documents function checks.';
+create index watched_documents_story_idx on open.watched_documents (story_id);
+create index watched_documents_created_by_idx on open.watched_documents (created_by);
 
-create table public.watch_events (
+create table open.watch_events (
   id bigint generated always as identity primary key,
-  document_id bigint not null references public.watched_documents (id) on delete cascade,
+  document_id bigint not null references open.watched_documents (id) on delete cascade,
   -- null when the page is not text (a PDF, an image): only its hash changed
   old_text text,
   new_text text,
@@ -1895,59 +1905,59 @@ create table public.watch_events (
   seen_by uuid references auth.users (id) on delete set null,
   seen_at timestamptz
 );
-comment on table public.watch_events is 'A watched page whose text changed since the previous fetch.';
-create index watch_events_document_idx on public.watch_events (document_id, detected_at desc);
-create index watch_events_unseen_idx on public.watch_events (detected_at desc) where seen_at is null;
-create index watch_events_seen_by_idx on public.watch_events (seen_by);
+comment on table open.watch_events is 'A watched page whose text changed since the previous fetch.';
+create index watch_events_document_idx on open.watch_events (document_id, detected_at desc);
+create index watch_events_unseen_idx on open.watch_events (detected_at desc) where seen_at is null;
+create index watch_events_seen_by_idx on open.watch_events (seen_by);
 
-alter table public.watched_documents enable row level security;
-alter table public.watch_events enable row level security;
-create policy "staff can read watched documents" on public.watched_documents
-  for select to authenticated using ((select private.is_staff()));
-create policy "staff can read watch events" on public.watch_events
-  for select to authenticated using ((select private.is_staff()));
-revoke all on public.watched_documents, public.watch_events from anon;
-revoke insert, update, delete, truncate on public.watched_documents, public.watch_events
+alter table open.watched_documents enable row level security;
+alter table open.watch_events enable row level security;
+create policy "staff can read watched documents" on open.watched_documents
+  for select to authenticated using ((select open_private.is_staff()));
+create policy "staff can read watch events" on open.watch_events
+  for select to authenticated using ((select open_private.is_staff()));
+revoke all on open.watched_documents, open.watch_events from anon;
+revoke insert, update, delete, truncate on open.watched_documents, open.watch_events
   from authenticated;
 
 -- ---- staff ---------------------------------------------------------------------------------------
 
-create function public.add_watched_document(p_url text, p_label text, p_story_id text default null)
-returns public.watched_documents
+create function open.add_watched_document(p_url text, p_label text, p_story_id text default null)
+returns open.watched_documents
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
+  uid uuid := open_private.require_role('editor');
   address text := btrim(coalesce(p_url, ''));
   name text := btrim(coalesce(p_label, ''));
   story text := nullif(btrim(coalesce(p_story_id, '')), '');
-  doc public.watched_documents;
+  doc open.watched_documents;
 begin
-  if not private.is_watchable_url(address) or length(name) not between 1 and 200 then
+  if not open_private.is_watchable_url(address) or length(name) not between 1 and 200 then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  if story is not null and not exists (select 1 from public.stories where id = story) then
+  if story is not null and not exists (select 1 from open.stories where id = story) then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  if exists (select 1 from public.watched_documents where url = address) then
+  if exists (select 1 from open.watched_documents where url = address) then
     raise exception 'url_taken' using errcode = 'PT409';
   end if;
-  insert into public.watched_documents (url, label, story_id, created_by)
+  insert into open.watched_documents (url, label, story_id, created_by)
   values (address, name, story, uid)
   returning * into doc;
   return doc;
 end;
 $$;
 
-create function public.update_watched_document(
+create function open.update_watched_document(
   p_id bigint,
   p_label text,
   p_story_id text,
   p_active boolean
 )
-returns public.watched_documents
+returns open.watched_documents
 language plpgsql
 security definer
 set search_path = ''
@@ -1955,16 +1965,16 @@ as $$
 declare
   name text := btrim(coalesce(p_label, ''));
   story text := nullif(btrim(coalesce(p_story_id, '')), '');
-  doc public.watched_documents;
+  doc open.watched_documents;
 begin
-  perform private.require_role('editor');
+  perform open_private.require_role('editor');
   if length(name) not between 1 and 200 or p_active is null then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  if story is not null and not exists (select 1 from public.stories where id = story) then
+  if story is not null and not exists (select 1 from open.stories where id = story) then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  update public.watched_documents
+  update open.watched_documents
   set label = name, story_id = story, active = p_active
   where id = p_id
   returning * into doc;
@@ -1976,15 +1986,15 @@ end;
 $$;
 
 /** Stop watching a page; its change history goes with it. */
-create function public.remove_watched_document(p_id bigint)
+create function open.remove_watched_document(p_id bigint)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('editor');
-  delete from public.watched_documents where id = p_id;
+  perform open_private.require_role('editor');
+  delete from open.watched_documents where id = p_id;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
@@ -1992,17 +2002,17 @@ end;
 $$;
 
 /** Mark changes as seen by the caller; returns how many were still unseen. */
-create function public.mark_watch_events_seen(p_ids bigint[])
+create function open.mark_watch_events_seen(p_ids bigint[])
 returns integer
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
+  uid uuid := open_private.require_role('editor');
   marked integer;
 begin
-  update public.watch_events
+  update open.watch_events
   set seen_by = uid, seen_at = now()
   where id = any (p_ids) and seen_at is null;
   get diagnostics marked = row_count;
@@ -2016,7 +2026,7 @@ $$;
  * Pages to check now, marked as checked so a parallel run skips them: active pages not checked
  * for `p_min_age` (or the pages `p_ids`, active or not), least recently checked first.
  */
-create function public.claim_watched_documents(
+create function open.claim_watched_documents(
   p_min_age interval,
   p_ids bigint[] default null,
   p_limit integer default 10
@@ -2026,11 +2036,11 @@ language sql
 security definer
 set search_path = ''
 as $$
-  update public.watched_documents d
+  update open.watched_documents d
   set last_checked_at = now()
   where d.id in (
     select w.id
-    from public.watched_documents w
+    from open.watched_documents w
     where (case when p_ids is null then w.active else w.id = any (p_ids) end)
       and (w.last_checked_at is null or w.last_checked_at <= now() - p_min_age)
     order by w.last_checked_at nulls first, w.id
@@ -2044,7 +2054,7 @@ $$;
  * Store one fetch: the first successful one sets the baseline; a different hash records a change
  * event with the previous and the new text. Returns the page's new status.
  */
-create function public.record_watch_result(
+create function open.record_watch_result(
   p_id bigint,
   p_hash text,
   p_text text,
@@ -2056,16 +2066,16 @@ security definer
 set search_path = ''
 as $$
 declare
-  doc public.watched_documents;
+  doc open.watched_documents;
   status text;
 begin
-  select * into doc from public.watched_documents where id = p_id for update;
+  select * into doc from open.watched_documents where id = p_id for update;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
   if p_error is not null or p_hash is null then
     status := 'error';
-    update public.watched_documents
+    update open.watched_documents
     set last_checked_at = now(), last_status = status,
         last_error = left(coalesce(p_error, 'no_hash'), 1000)
     where id = p_id;
@@ -2078,10 +2088,10 @@ begin
     else 'changed'
   end;
   if status = 'changed' then
-    insert into public.watch_events (document_id, old_text, new_text)
+    insert into open.watch_events (document_id, old_text, new_text)
     values (p_id, doc.last_text, p_text);
   end if;
-  update public.watched_documents
+  update open.watched_documents
   set last_hash = p_hash,
       last_text = p_text,
       last_checked_at = now(),
@@ -2094,31 +2104,31 @@ end;
 $$;
 
 revoke execute on function
-  private.is_watchable_url(text),
-  public.add_watched_document(text, text, text),
-  public.update_watched_document(bigint, text, text, boolean),
-  public.remove_watched_document(bigint),
-  public.mark_watch_events_seen(bigint[]),
-  public.claim_watched_documents(interval, bigint[], integer),
-  public.record_watch_result(bigint, text, text, text)
+  open_private.is_watchable_url(text),
+  open.add_watched_document(text, text, text),
+  open.update_watched_document(bigint, text, text, boolean),
+  open.remove_watched_document(bigint),
+  open.mark_watch_events_seen(bigint[]),
+  open.claim_watched_documents(interval, bigint[], integer),
+  open.record_watch_result(bigint, text, text, text)
 from public, anon;
 grant execute on function
-  public.add_watched_document(text, text, text),
-  public.update_watched_document(bigint, text, text, boolean),
-  public.remove_watched_document(bigint),
-  public.mark_watch_events_seen(bigint[])
+  open.add_watched_document(text, text, text),
+  open.update_watched_document(bigint, text, text, boolean),
+  open.remove_watched_document(bigint),
+  open.mark_watch_events_seen(bigint[])
 to authenticated;
 revoke execute on function
-  public.claim_watched_documents(interval, bigint[], integer),
-  public.record_watch_result(bigint, text, text, text)
+  open.claim_watched_documents(interval, bigint[], integer),
+  open.record_watch_result(bigint, text, text, text)
 from authenticated;
 grant execute on function
-  public.claim_watched_documents(interval, bigint[], integer),
-  public.record_watch_result(bigint, text, text, text)
+  open.claim_watched_documents(interval, bigint[], integer),
+  open.record_watch_result(bigint, text, text, text)
 to service_role;
 
 -- every hour; a page is due again 20 hours after its last check, so each is checked about daily
 select cron.schedule(
   'watch-documents', '7 * * * *',
-  $$ select private.call_function('watch-documents', '{"source": "cron"}') $$
+  $$ select open_private.call_function('watch-documents', '{"source": "cron"}') $$
 );

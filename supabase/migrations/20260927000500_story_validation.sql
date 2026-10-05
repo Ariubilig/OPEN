@@ -1,23 +1,23 @@
 -- The publish gate. Structure: JSON Schemas generated from zod (20260927000400_json_schemas.sql).
 -- Rules the schema cannot express: story_problems(), the SQL twin of src/lib/validate.ts.
 
-alter table public.published_stories
+alter table open.published_stories
   add constraint published_stories_content_schema
-  check (extensions.jsonb_matches_schema(private.story_json_schema(), content));
+  check (extensions.jsonb_matches_schema(open_private.story_json_schema(), content));
 
-alter table public.channels
+alter table open.channels
   add constraint channels_content_schema
-  check (extensions.jsonb_matches_schema(private.channel_json_schema(), content));
+  check (extensions.jsonb_matches_schema(open_private.channel_json_schema(), content));
 
-alter table public.tax_rules
+alter table open.tax_rules
   add constraint tax_rules_content_schema
-  check (extensions.jsonb_matches_schema(private.tax_rules_json_schema(), content));
+  check (extensions.jsonb_matches_schema(open_private.tax_rules_json_schema(), content));
 
 /**
  * Every source reference in a story with its JSON path, in the order the story page renders
  * them (same as sourceRefs() in src/lib/sources.ts).
  */
-create function private.source_refs(story jsonb)
+create function open_private.source_refs(story jsonb)
 returns table (ord integer, path text, source text)
 language sql
 immutable
@@ -73,7 +73,7 @@ $$;
  * timeline_current_count, timeline_order, featured_meaning, featured_affects, featured_evidence,
  * featured_participate, featured_numbers, unknown_related, unknown_channel.
  */
-create function private.story_problems(story jsonb)
+create function open_private.story_problems(story jsonb)
 returns text[]
 language plpgsql
 stable
@@ -87,11 +87,11 @@ declare
   current_count integer;
   previous_date text;
 begin
-  if not extensions.jsonb_matches_schema(private.story_json_schema(), story) then
+  if not extensions.jsonb_matches_schema(open_private.story_json_schema(), story) then
     return array(
       select 'schema $ ' || e
       from unnest(extensions.jsonschema_validation_errors(
-        private.story_json_schema(), story::json)) as e
+        open_private.story_json_schema(), story::json)) as e
     );
   end if;
 
@@ -105,7 +105,7 @@ begin
       problems := problems || format('duplicate_source $.sources[%s].id', r.idx);
     end if;
   end loop;
-  for r in select path, source from private.source_refs(story) order by ord loop
+  for r in select path, source from open_private.source_refs(story) order by ord loop
     if r.source <> 'TODO_VERIFY' and not (r.source = any (source_ids)) then
       problems := problems || format('unknown_source %s', r.path);
     end if;
@@ -159,7 +159,7 @@ begin
     from jsonb_array_elements(coalesce(story -> 'relatedStoryIds', '[]')) with ordinality as x(v, i)
   loop
     if r.id <> story ->> 'id'
-       and not exists (select 1 from public.stories s where s.id = r.id) then
+       and not exists (select 1 from open.stories s where s.id = r.id) then
       problems := problems || format('unknown_related $.relatedStoryIds[%s]', r.idx);
     end if;
   end loop;
@@ -167,7 +167,7 @@ begin
     select i - 1 as idx, p ->> 'channel' as channel
     from jsonb_array_elements(story -> 'participate') with ordinality as x(p, i)
   loop
-    if not exists (select 1 from public.channels c where c.id = r.channel) then
+    if not exists (select 1 from open.channels c where c.id = r.channel) then
       problems := problems || format('unknown_channel $.participate[%s].channel', r.idx);
     end if;
   end loop;
@@ -177,15 +177,15 @@ end;
 $$;
 
 /** The public snapshot of a story: no reviewer notes, no `draft` flag. */
-create function private.published_content(story jsonb)
+create function open_private.published_content(story jsonb)
 returns jsonb
 language sql
 immutable
 set search_path = ''
-as $$ select private.strip_notes(story) - 'draft' $$;
+as $$ select open_private.strip_notes(story) - 'draft' $$;
 
 /** Problems of a working copy as it would be published (staff; used by the admin as a check). */
-create function public.story_problems(p_content jsonb)
+create function open.story_problems(p_content jsonb)
 returns text[]
 language plpgsql
 stable
@@ -193,10 +193,10 @@ security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('editor');
-  return private.story_problems(p_content);
+  perform open_private.require_role('editor');
+  return open_private.story_problems(p_content);
 end;
 $$;
 
-revoke execute on function public.story_problems(jsonb) from public, anon;
-grant execute on function public.story_problems(jsonb) to authenticated;
+revoke execute on function open.story_problems(jsonb) from public, anon;
+grant execute on function open.story_problems(jsonb) to authenticated;

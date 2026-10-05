@@ -1,26 +1,26 @@
 -- Stories: working copies, their revisions, and the public snapshot.
 --
 -- A story is one JSON document in the shape of StorySchema (src/data/schema.ts).
---  * public.stories            working copy; staff only; may be half-filled while drafting
---  * public.story_revisions    every change to a working copy, with who, when and why
---  * public.published_stories  what readers see: written only by publish_story(), checked
+--  * open.stories            working copy; staff only; may be half-filled while drafting
+--  * open.story_revisions    every change to a working copy, with who, when and why
+--  * open.published_stories  what readers see: written only by publish_story(), checked
 --                              against the JSON Schema, reviewer notes removed
 
-create type public.story_state as enum (
+create type open.story_state as enum (
   'draft',              -- being written, or has changes that are not live yet
   'in_review',          -- submitted for a second person to check
   'changes_requested',  -- a reviewer sent it back with a note
   'published'           -- the working copy is exactly what is live
 );
 
-create type public.revision_action as enum (
+create type open.revision_action as enum (
   'create', 'import', 'ai_draft', 'save', 'restore',
   'submit', 'request_changes', 'publish', 'unpublish'
 );
 
 -- ---- helpers for generated columns (immutable) -------------------------------------------------
 
-create function private.jsonb_texts(value jsonb)
+create function open_private.jsonb_texts(value jsonb)
 returns text[]
 language sql
 immutable
@@ -34,7 +34,7 @@ as $$
 $$;
 
 /** Distinct `group` values of a story's `affects` list. */
-create function private.affect_groups(affects jsonb)
+create function open_private.affect_groups(affects jsonb)
 returns text[]
 language sql
 immutable
@@ -53,7 +53,7 @@ as $$
 $$;
 
 /** Search document: title (A), summary (B), official title (C). No stemming: Mongolian has no config. */
-create function private.story_search_vector(content jsonb)
+create function open_private.story_search_vector(content jsonb)
 returns tsvector
 language sql
 immutable
@@ -66,16 +66,16 @@ as $$
     setweight(to_tsvector('pg_catalog.simple', coalesce(content #>> '{officialTitle,text}', '')), 'C')
 $$;
 
-grant execute on function private.jsonb_texts(jsonb), private.affect_groups(jsonb),
-  private.story_search_vector(jsonb)
+grant execute on function open_private.jsonb_texts(jsonb), open_private.affect_groups(jsonb),
+  open_private.story_search_vector(jsonb)
   to anon, authenticated, service_role;
 
 -- ---- tables ------------------------------------------------------------------------------------
 
-create table public.stories (
+create table open.stories (
   id text primary key check (id ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and length(id) <= 80),
   content jsonb not null check (jsonb_typeof(content) = 'object' and content ->> 'id' = id),
-  state public.story_state not null default 'draft',
+  state open.story_state not null default 'draft',
   review_note text,
   version integer not null default 1,
   created_by uuid references auth.users (id) on delete set null,
@@ -86,25 +86,25 @@ create table public.stories (
   submitted_by uuid references auth.users (id) on delete set null,
   submitted_at timestamptz
 );
-comment on table public.stories is
+comment on table open.stories is
   'Working copy of every story (staff only). Written through the workflow RPCs.';
 
-create table public.story_revisions (
+create table open.story_revisions (
   id bigint generated always as identity primary key,
-  story_id text not null references public.stories (id) on delete cascade,
+  story_id text not null references open.stories (id) on delete cascade,
   content jsonb not null,
-  action public.revision_action not null,
+  action open.revision_action not null,
   note text check (length(note) <= 2000),
   author uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
 );
-comment on table public.story_revisions is 'Every change to a working copy.';
-create index story_revisions_story_idx on public.story_revisions (story_id, id desc);
+comment on table open.story_revisions is 'Every change to a working copy.';
+create index story_revisions_story_idx on open.story_revisions (story_id, id desc);
 
-create table public.published_stories (
-  id text primary key references public.stories (id) on delete cascade,
+create table open.published_stories (
+  id text primary key references open.stories (id) on delete cascade,
   content jsonb not null check (content ->> 'id' = id),
-  revision_id bigint not null references public.story_revisions (id),
+  revision_id bigint not null references open.story_revisions (id),
   first_published_at timestamptz not null default now(),
   published_at timestamptz not null default now(),
   published_by uuid references auth.users (id) on delete set null,
@@ -113,52 +113,52 @@ create table public.published_stories (
   featured boolean generated always as ((content ->> 'featured')::boolean) stored,
   sort_order double precision generated always as ((content ->> 'order')::double precision) stored,
   published_on text generated always as (content ->> 'publishedAt') stored,
-  topics text[] generated always as (private.jsonb_texts(content -> 'topics')) stored,
-  groups text[] generated always as (private.affect_groups(content -> 'affects')) stored,
-  search tsvector generated always as (private.story_search_vector(content)) stored
+  topics text[] generated always as (open_private.jsonb_texts(content -> 'topics')) stored,
+  groups text[] generated always as (open_private.affect_groups(content -> 'affects')) stored,
+  search tsvector generated always as (open_private.story_search_vector(content)) stored
 );
-comment on table public.published_stories is
+comment on table open.published_stories is
   'What readers see. Written only by publish_story(); reviewer notes are removed.';
 create index published_stories_feed_idx
-  on public.published_stories (sort_order nulls last, published_on desc);
-create index published_stories_groups_idx on public.published_stories using gin (groups);
-create index published_stories_search_idx on public.published_stories using gin (search);
+  on open.published_stories (sort_order nulls last, published_on desc);
+create index published_stories_groups_idx on open.published_stories using gin (groups);
+create index published_stories_search_idx on open.published_stories using gin (search);
 
 -- foreign keys to people and revisions (deleting a user or a story looks these up)
-create index stories_created_by_idx on public.stories (created_by);
-create index stories_updated_by_idx on public.stories (updated_by);
-create index stories_submitted_by_idx on public.stories (submitted_by);
-create index story_revisions_author_idx on public.story_revisions (author);
-create index published_stories_published_by_idx on public.published_stories (published_by);
-create index published_stories_revision_idx on public.published_stories (revision_id);
+create index stories_created_by_idx on open.stories (created_by);
+create index stories_updated_by_idx on open.stories (updated_by);
+create index stories_submitted_by_idx on open.stories (submitted_by);
+create index story_revisions_author_idx on open.story_revisions (author);
+create index published_stories_published_by_idx on open.published_stories (published_by);
+create index published_stories_revision_idx on open.published_stories (revision_id);
 
 -- ---- row-level security ------------------------------------------------------------------------
 
-alter table public.stories enable row level security;
-alter table public.story_revisions enable row level security;
-alter table public.published_stories enable row level security;
+alter table open.stories enable row level security;
+alter table open.story_revisions enable row level security;
+alter table open.published_stories enable row level security;
 
-create policy "staff can read working copies" on public.stories
+create policy "staff can read working copies" on open.stories
   for select to authenticated
-  using ((select private.is_staff()));
+  using ((select open_private.is_staff()));
 
-create policy "staff can read revisions" on public.story_revisions
+create policy "staff can read revisions" on open.story_revisions
   for select to authenticated
-  using ((select private.is_staff()));
+  using ((select open_private.is_staff()));
 
-create policy "everyone can read published stories" on public.published_stories
+create policy "everyone can read published stories" on open.published_stories
   for select to anon, authenticated
   using (true);
 
-revoke all on public.stories, public.story_revisions from anon;
+revoke all on open.stories, open.story_revisions from anon;
 revoke insert, update, delete, truncate
-  on public.stories, public.story_revisions, public.published_stories
+  on open.stories, open.story_revisions, open.published_stories
   from anon, authenticated;
 
 -- ---- views -------------------------------------------------------------------------------------
 
 /** What a feed card needs. Readers load full stories one at a time. */
-create view public.story_cards
+create view open.story_cards
 with (security_invoker = true)
 as
 select
@@ -174,10 +174,10 @@ select
   content -> 'summary' as summary,
   content -> 'timeline' as timeline,
   jsonb_array_length(content -> 'sources') as source_count
-from public.published_stories;
+from open.published_stories;
 
 /** Count of TODO_VERIFY values in a document, reviewer notes excluded. */
-create function private.count_todos(content jsonb)
+create function open_private.count_todos(content jsonb)
 returns integer
 language plpgsql
 immutable
@@ -191,11 +191,11 @@ begin
   case jsonb_typeof(content)
     when 'object' then
       for item in select key, value from jsonb_each(content) where key <> 'verify' loop
-        total := total + private.count_todos(item.value);
+        total := total + open_private.count_todos(item.value);
       end loop;
     when 'array' then
       for item in select value from jsonb_array_elements(content) loop
-        total := total + private.count_todos(item.value);
+        total := total + open_private.count_todos(item.value);
       end loop;
     when 'string' then
       total := (length(content #>> '{}') - length(replace(content #>> '{}', 'TODO_VERIFY', '')))
@@ -206,10 +206,10 @@ begin
   return total;
 end;
 $$;
-grant execute on function private.count_todos(jsonb) to authenticated;
+grant execute on function open_private.count_todos(jsonb) to authenticated;
 
 /** The admin's story list: working copy, state, live or not, who changed it last. */
-create view public.story_admin_list
+create view open.story_admin_list
 with (security_invoker = true)
 as
 select
@@ -229,10 +229,10 @@ select
   p.id is not null as is_live,
   p.first_published_at,
   p.published_at,
-  private.count_todos(s.content) as todo_count
-from public.stories s
-left join public.published_stories p on p.id = s.id
-left join public.staff editor on editor.user_id = s.updated_by
-left join public.staff submitter on submitter.user_id = s.submitted_by;
+  open_private.count_todos(s.content) as todo_count
+from open.stories s
+left join open.published_stories p on p.id = s.id
+left join open.staff editor on editor.user_id = s.updated_by
+left join open.staff submitter on submitter.user_id = s.submitted_by;
 
-revoke all on public.story_admin_list from anon;
+revoke all on open.story_admin_list from anon;

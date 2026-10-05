@@ -2,7 +2,7 @@
 
 -- ---- throttling --------------------------------------------------------------------------------
 
-create table private.rate_limits (
+create table open_private.rate_limits (
   key text not null,
   window_start timestamptz not null,
   count integer not null default 0,
@@ -14,7 +14,7 @@ create table private.rate_limits (
  * writes that one. Hosted Supabase sits behind Cloudflare (cf-connecting-ip); locally the
  * gateway sets x-real-ip.
  */
-create function private.client_address()
+create function open_private.client_address()
 returns text
 language sql
 stable
@@ -32,7 +32,7 @@ as $$
 $$;
 
 /** Count one use of `key` in the current window; 429 when there were `max` already. */
-create function private.throttle(p_key text, p_max integer, p_window interval)
+create function open_private.throttle(p_key text, p_max integer, p_window interval)
 returns void
 language plpgsql
 security definer
@@ -43,7 +43,7 @@ declare
   bucket timestamptz := to_timestamp(floor(extract(epoch from now()) / seconds) * seconds);
   used integer;
 begin
-  insert into private.rate_limits as r (key, window_start, count)
+  insert into open_private.rate_limits as r (key, window_start, count)
   values (p_key, bucket, 1)
   on conflict (key, window_start) do update set count = r.count + 1
   returning count into used;
@@ -52,16 +52,16 @@ begin
   end if;
   -- keep the table small: now and then drop windows older than a day
   if random() < 0.01 then
-    delete from private.rate_limits where window_start < now() - interval '1 day';
+    delete from open_private.rate_limits where window_start < now() - interval '1 day';
   end if;
 end;
 $$;
 
 -- ---- error reports -----------------------------------------------------------------------------
 
-create table public.reports (
+create table open.reports (
   id bigint generated always as identity primary key,
-  story_id text not null references public.stories (id) on delete cascade,
+  story_id text not null references open.stories (id) on delete cascade,
   message text not null check (length(message) between 5 and 2000),
   contact text check (length(contact) <= 200),
   status text not null default 'new' check (status in ('new', 'resolved', 'dismissed')),
@@ -70,20 +70,20 @@ create table public.reports (
   resolved_by uuid references auth.users (id) on delete set null,
   resolved_at timestamptz
 );
-comment on table public.reports is
+comment on table open.reports is
   'Readers'' error reports on published stories. Written through submit_report(); staff read.';
-create index reports_status_idx on public.reports (status, created_at desc);
-create index reports_story_idx on public.reports (story_id);
-create index reports_resolved_by_idx on public.reports (resolved_by);
+create index reports_status_idx on open.reports (status, created_at desc);
+create index reports_story_idx on open.reports (story_id);
+create index reports_resolved_by_idx on open.reports (resolved_by);
 
-alter table public.reports enable row level security;
-create policy "staff can read reports" on public.reports
-  for select to authenticated using ((select private.is_staff()));
-revoke all on public.reports from anon;
-revoke insert, update, delete, truncate on public.reports from authenticated;
+alter table open.reports enable row level security;
+create policy "staff can read reports" on open.reports
+  for select to authenticated using ((select open_private.is_staff()));
+revoke all on open.reports from anon;
+revoke insert, update, delete, truncate on open.reports from authenticated;
 
 /** A reader reports an error in a published story. Limited to 10 an hour per address. */
-create function public.submit_report(
+create function open.submit_report(
   p_story_id text,
   p_message text,
   p_contact text default null
@@ -100,30 +100,30 @@ begin
   if length(message) not between 5 and 2000 or length(coalesce(contact, '')) > 200 then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  if not exists (select 1 from public.published_stories where id = p_story_id) then
+  if not exists (select 1 from open.published_stories where id = p_story_id) then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  perform private.throttle('report:' || private.client_address(), 10, interval '1 hour');
-  perform private.throttle('report-story:' || p_story_id, 50, interval '1 hour');
-  insert into public.reports (story_id, message, contact) values (p_story_id, message, contact);
+  perform open_private.throttle('report:' || open_private.client_address(), 10, interval '1 hour');
+  perform open_private.throttle('report-story:' || p_story_id, 50, interval '1 hour');
+  insert into open.reports (story_id, message, contact) values (p_story_id, message, contact);
 end;
 $$;
 
 /** Staff close a report: resolved (fixed) or dismissed (nothing to fix). */
-create function public.resolve_report(p_id bigint, p_status text, p_note text default null)
-returns public.reports
+create function open.resolve_report(p_id bigint, p_status text, p_note text default null)
+returns open.reports
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
-  report public.reports;
+  uid uuid := open_private.require_role('editor');
+  report open.reports;
 begin
   if p_status not in ('new', 'resolved', 'dismissed') then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  update public.reports
+  update open.reports
   set status = p_status,
       resolution_note = nullif(btrim(coalesce(p_note, '')), ''),
       resolved_by = case when p_status = 'new' then null else uid end,
@@ -137,8 +137,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.resolve_report(bigint, text, text) from public, anon;
-grant execute on function public.resolve_report(bigint, text, text) to authenticated;
+revoke execute on function open.resolve_report(bigint, text, text) from public, anon;
+grant execute on function open.resolve_report(bigint, text, text) to authenticated;
 
 -- ---- search ------------------------------------------------------------------------------------
 
@@ -146,8 +146,8 @@ grant execute on function public.resolve_report(bigint, text, text) to authentic
  * Published stories matching every word of the query as a word prefix ("татвар" finds
  * "татварын"), best matches first. Up to 8 words, 50 results.
  */
-create function public.search_stories(p_query text)
-returns setof public.story_cards
+create function open.search_stories(p_query text)
+returns setof open.story_cards
 language plpgsql
 stable
 set search_path = ''
@@ -173,8 +173,8 @@ begin
   );
   return query
     select c.*
-    from public.story_cards c
-    join public.published_stories p on p.id = c.id
+    from open.story_cards c
+    join open.published_stories p on p.id = c.id
     where p.search @@ query
     order by ts_rank(p.search, query) desc, c.sort_order nulls last, c.published_on desc
     limit 50;

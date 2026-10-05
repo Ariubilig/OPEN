@@ -41,12 +41,14 @@ Deno.serve(async (req) => {
   const url = Deno.env.get('SUPABASE_URL')!
   const asCaller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
     global: { headers: { Authorization: authorization } },
+    db: { schema: 'open' },
     auth: { persistSession: false, autoRefreshToken: false },
   })
   const service = createClient(
     url,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     {
+      db: { schema: 'open' },
       auth: { persistSession: false, autoRefreshToken: false },
     },
   )

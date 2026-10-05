@@ -99,7 +99,8 @@ supabase link --project-ref <ref>
 supabase db push
 ```
 
-Then run `supabase/bootstrap.sql` once (Dashboard → SQL Editor, or `psql`): channels, tax rules
+Add `open` (the app's schema) under **Project Settings → Data API → Exposed schemas**. Then run
+`supabase/bootstrap.sql` once (Dashboard → SQL Editor, or `psql`): channels, tax rules
 and the seed stories as drafts for the team to check. Never use `--include-seed` on production:
 `seed.sql` holds the local test accounts.
 
@@ -130,7 +131,7 @@ domain must be verified.
 editor:
 
 ```sql
-insert into public.staff (user_id, name, role)
+insert into open.staff (user_id, name, role)
 select id, 'Your name', 'admin' from auth.users where email = 'you@example.mn';
 ```
 

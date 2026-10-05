@@ -15,6 +15,7 @@ const PARALLEL = 4
 
 const url = Deno.env.get('SUPABASE_URL')!
 const service = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+  db: { schema: 'open' },
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
@@ -23,6 +24,7 @@ async function isStaff(authorization: string | null): Promise<boolean> {
   if (!authorization) return false
   const caller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
     global: { headers: { Authorization: authorization } },
+    db: { schema: 'open' },
     auth: { persistSession: false, autoRefreshToken: false },
   })
   const { data } = await caller.auth.getUser()

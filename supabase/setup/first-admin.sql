@@ -18,7 +18,7 @@ begin
     raise exception 'No account with the email %. Add it under Authentication → Users first.',
       admin_email;
   end if;
-  insert into public.staff (user_id, name, role)
+  insert into open.staff (user_id, name, role)
   values (admin_id, btrim(admin_name), 'admin')
   on conflict (user_id) do update set name = excluded.name, role = 'admin';
   raise notice 'Admin added: % (%)', admin_name, admin_email;
@@ -27,5 +27,5 @@ $$;
 
 -- Check: you should see one row with role "admin".
 select s.name, s.role, u.email
-from public.staff s
+from open.staff s
 join auth.users u on u.id = s.user_id;

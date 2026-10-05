@@ -5,7 +5,7 @@
 
 -- public https pages only: a host name with a dot and a letter TLD (no IP address, no localhost,
 -- no port, no user info). The edge function applies the same rule to every redirect.
-create function private.is_watchable_url(p_url text)
+create function open_private.is_watchable_url(p_url text)
 returns boolean
 language sql
 immutable
@@ -15,11 +15,11 @@ as $$
     and p_url ~ '^https://[A-Za-z0-9.-]+\.([A-Za-z]{2,}|xn--[A-Za-z0-9-]+)([/?#][^[:space:]]*)?$'
 $$;
 
-create table public.watched_documents (
+create table open.watched_documents (
   id bigint generated always as identity primary key,
-  url text not null unique check (private.is_watchable_url(url)),
+  url text not null unique check (open_private.is_watchable_url(url)),
   label text not null check (label = btrim(label) and length(label) between 1 and 200),
-  story_id text references public.stories (id) on delete set null,
+  story_id text references open.stories (id) on delete set null,
   active boolean not null default true,
   -- the last successful fetch: hash of its text (of its bytes when it is not text), and the text
   last_hash text,
@@ -31,13 +31,13 @@ create table public.watched_documents (
   created_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
 );
-comment on table public.watched_documents is 'Official pages the watch-documents function checks.';
-create index watched_documents_story_idx on public.watched_documents (story_id);
-create index watched_documents_created_by_idx on public.watched_documents (created_by);
+comment on table open.watched_documents is 'Official pages the watch-documents function checks.';
+create index watched_documents_story_idx on open.watched_documents (story_id);
+create index watched_documents_created_by_idx on open.watched_documents (created_by);
 
-create table public.watch_events (
+create table open.watch_events (
   id bigint generated always as identity primary key,
-  document_id bigint not null references public.watched_documents (id) on delete cascade,
+  document_id bigint not null references open.watched_documents (id) on delete cascade,
   -- null when the page is not text (a PDF, an image): only its hash changed
   old_text text,
   new_text text,
@@ -45,59 +45,59 @@ create table public.watch_events (
   seen_by uuid references auth.users (id) on delete set null,
   seen_at timestamptz
 );
-comment on table public.watch_events is 'A watched page whose text changed since the previous fetch.';
-create index watch_events_document_idx on public.watch_events (document_id, detected_at desc);
-create index watch_events_unseen_idx on public.watch_events (detected_at desc) where seen_at is null;
-create index watch_events_seen_by_idx on public.watch_events (seen_by);
+comment on table open.watch_events is 'A watched page whose text changed since the previous fetch.';
+create index watch_events_document_idx on open.watch_events (document_id, detected_at desc);
+create index watch_events_unseen_idx on open.watch_events (detected_at desc) where seen_at is null;
+create index watch_events_seen_by_idx on open.watch_events (seen_by);
 
-alter table public.watched_documents enable row level security;
-alter table public.watch_events enable row level security;
-create policy "staff can read watched documents" on public.watched_documents
-  for select to authenticated using ((select private.is_staff()));
-create policy "staff can read watch events" on public.watch_events
-  for select to authenticated using ((select private.is_staff()));
-revoke all on public.watched_documents, public.watch_events from anon;
-revoke insert, update, delete, truncate on public.watched_documents, public.watch_events
+alter table open.watched_documents enable row level security;
+alter table open.watch_events enable row level security;
+create policy "staff can read watched documents" on open.watched_documents
+  for select to authenticated using ((select open_private.is_staff()));
+create policy "staff can read watch events" on open.watch_events
+  for select to authenticated using ((select open_private.is_staff()));
+revoke all on open.watched_documents, open.watch_events from anon;
+revoke insert, update, delete, truncate on open.watched_documents, open.watch_events
   from authenticated;
 
 -- ---- staff ---------------------------------------------------------------------------------------
 
-create function public.add_watched_document(p_url text, p_label text, p_story_id text default null)
-returns public.watched_documents
+create function open.add_watched_document(p_url text, p_label text, p_story_id text default null)
+returns open.watched_documents
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
+  uid uuid := open_private.require_role('editor');
   address text := btrim(coalesce(p_url, ''));
   name text := btrim(coalesce(p_label, ''));
   story text := nullif(btrim(coalesce(p_story_id, '')), '');
-  doc public.watched_documents;
+  doc open.watched_documents;
 begin
-  if not private.is_watchable_url(address) or length(name) not between 1 and 200 then
+  if not open_private.is_watchable_url(address) or length(name) not between 1 and 200 then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  if story is not null and not exists (select 1 from public.stories where id = story) then
+  if story is not null and not exists (select 1 from open.stories where id = story) then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  if exists (select 1 from public.watched_documents where url = address) then
+  if exists (select 1 from open.watched_documents where url = address) then
     raise exception 'url_taken' using errcode = 'PT409';
   end if;
-  insert into public.watched_documents (url, label, story_id, created_by)
+  insert into open.watched_documents (url, label, story_id, created_by)
   values (address, name, story, uid)
   returning * into doc;
   return doc;
 end;
 $$;
 
-create function public.update_watched_document(
+create function open.update_watched_document(
   p_id bigint,
   p_label text,
   p_story_id text,
   p_active boolean
 )
-returns public.watched_documents
+returns open.watched_documents
 language plpgsql
 security definer
 set search_path = ''
@@ -105,16 +105,16 @@ as $$
 declare
   name text := btrim(coalesce(p_label, ''));
   story text := nullif(btrim(coalesce(p_story_id, '')), '');
-  doc public.watched_documents;
+  doc open.watched_documents;
 begin
-  perform private.require_role('editor');
+  perform open_private.require_role('editor');
   if length(name) not between 1 and 200 or p_active is null then
     raise exception 'invalid_input' using errcode = 'PT400';
   end if;
-  if story is not null and not exists (select 1 from public.stories where id = story) then
+  if story is not null and not exists (select 1 from open.stories where id = story) then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
-  update public.watched_documents
+  update open.watched_documents
   set label = name, story_id = story, active = p_active
   where id = p_id
   returning * into doc;
@@ -126,15 +126,15 @@ end;
 $$;
 
 /** Stop watching a page; its change history goes with it. */
-create function public.remove_watched_document(p_id bigint)
+create function open.remove_watched_document(p_id bigint)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  perform private.require_role('editor');
-  delete from public.watched_documents where id = p_id;
+  perform open_private.require_role('editor');
+  delete from open.watched_documents where id = p_id;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
@@ -142,17 +142,17 @@ end;
 $$;
 
 /** Mark changes as seen by the caller; returns how many were still unseen. */
-create function public.mark_watch_events_seen(p_ids bigint[])
+create function open.mark_watch_events_seen(p_ids bigint[])
 returns integer
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  uid uuid := private.require_role('editor');
+  uid uuid := open_private.require_role('editor');
   marked integer;
 begin
-  update public.watch_events
+  update open.watch_events
   set seen_by = uid, seen_at = now()
   where id = any (p_ids) and seen_at is null;
   get diagnostics marked = row_count;
@@ -166,7 +166,7 @@ $$;
  * Pages to check now, marked as checked so a parallel run skips them: active pages not checked
  * for `p_min_age` (or the pages `p_ids`, active or not), least recently checked first.
  */
-create function public.claim_watched_documents(
+create function open.claim_watched_documents(
   p_min_age interval,
   p_ids bigint[] default null,
   p_limit integer default 10
@@ -176,11 +176,11 @@ language sql
 security definer
 set search_path = ''
 as $$
-  update public.watched_documents d
+  update open.watched_documents d
   set last_checked_at = now()
   where d.id in (
     select w.id
-    from public.watched_documents w
+    from open.watched_documents w
     where (case when p_ids is null then w.active else w.id = any (p_ids) end)
       and (w.last_checked_at is null or w.last_checked_at <= now() - p_min_age)
     order by w.last_checked_at nulls first, w.id
@@ -194,7 +194,7 @@ $$;
  * Store one fetch: the first successful one sets the baseline; a different hash records a change
  * event with the previous and the new text. Returns the page's new status.
  */
-create function public.record_watch_result(
+create function open.record_watch_result(
   p_id bigint,
   p_hash text,
   p_text text,
@@ -206,16 +206,16 @@ security definer
 set search_path = ''
 as $$
 declare
-  doc public.watched_documents;
+  doc open.watched_documents;
   status text;
 begin
-  select * into doc from public.watched_documents where id = p_id for update;
+  select * into doc from open.watched_documents where id = p_id for update;
   if not found then
     raise exception 'not_found' using errcode = 'PT404';
   end if;
   if p_error is not null or p_hash is null then
     status := 'error';
-    update public.watched_documents
+    update open.watched_documents
     set last_checked_at = now(), last_status = status,
         last_error = left(coalesce(p_error, 'no_hash'), 1000)
     where id = p_id;
@@ -228,10 +228,10 @@ begin
     else 'changed'
   end;
   if status = 'changed' then
-    insert into public.watch_events (document_id, old_text, new_text)
+    insert into open.watch_events (document_id, old_text, new_text)
     values (p_id, doc.last_text, p_text);
   end if;
-  update public.watched_documents
+  update open.watched_documents
   set last_hash = p_hash,
       last_text = p_text,
       last_checked_at = now(),
@@ -244,31 +244,31 @@ end;
 $$;
 
 revoke execute on function
-  private.is_watchable_url(text),
-  public.add_watched_document(text, text, text),
-  public.update_watched_document(bigint, text, text, boolean),
-  public.remove_watched_document(bigint),
-  public.mark_watch_events_seen(bigint[]),
-  public.claim_watched_documents(interval, bigint[], integer),
-  public.record_watch_result(bigint, text, text, text)
+  open_private.is_watchable_url(text),
+  open.add_watched_document(text, text, text),
+  open.update_watched_document(bigint, text, text, boolean),
+  open.remove_watched_document(bigint),
+  open.mark_watch_events_seen(bigint[]),
+  open.claim_watched_documents(interval, bigint[], integer),
+  open.record_watch_result(bigint, text, text, text)
 from public, anon;
 grant execute on function
-  public.add_watched_document(text, text, text),
-  public.update_watched_document(bigint, text, text, boolean),
-  public.remove_watched_document(bigint),
-  public.mark_watch_events_seen(bigint[])
+  open.add_watched_document(text, text, text),
+  open.update_watched_document(bigint, text, text, boolean),
+  open.remove_watched_document(bigint),
+  open.mark_watch_events_seen(bigint[])
 to authenticated;
 revoke execute on function
-  public.claim_watched_documents(interval, bigint[], integer),
-  public.record_watch_result(bigint, text, text, text)
+  open.claim_watched_documents(interval, bigint[], integer),
+  open.record_watch_result(bigint, text, text, text)
 from authenticated;
 grant execute on function
-  public.claim_watched_documents(interval, bigint[], integer),
-  public.record_watch_result(bigint, text, text, text)
+  open.claim_watched_documents(interval, bigint[], integer),
+  open.record_watch_result(bigint, text, text, text)
 to service_role;
 
 -- every hour; a page is due again 20 hours after its last check, so each is checked about daily
 select cron.schedule(
   'watch-documents', '7 * * * *',
-  $$ select private.call_function('watch-documents', '{"source": "cron"}') $$
+  $$ select open_private.call_function('watch-documents', '{"source": "cron"}') $$
 );

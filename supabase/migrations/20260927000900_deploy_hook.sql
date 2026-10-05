@@ -4,14 +4,14 @@
 
 create extension if not exists pg_net with schema extensions;
 
-create function private.call_deploy_hook()
+create function open_private.call_deploy_hook()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  hook text := (select deploy_hook_url from public.settings);
+  hook text := (select deploy_hook_url from open.settings);
 begin
   if hook is not null then
     -- asynchronous: the publish does not wait for the host
@@ -22,5 +22,5 @@ end;
 $$;
 
 create trigger published_stories_deploy_hook
-  after insert or update or delete on public.published_stories
-  for each statement execute function private.call_deploy_hook();
+  after insert or update or delete on open.published_stories
+  for each statement execute function open_private.call_deploy_hook();

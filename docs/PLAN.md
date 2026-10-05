@@ -88,7 +88,7 @@ d.parliament.mn, image uploads, an English interface, native apps.
 
 ## 4. Data model
 
-All tables in `public` have row-level security on. Helper functions live in a `private` schema
+All tables in `open` (the app's schema; the Supabase project is shared) have row-level security on. Helper functions live in an `open_private` schema
 that the API does not expose.
 
 ### Enums
@@ -117,7 +117,7 @@ that the API does not expose.
 | `email_outbox`          | `to_email`, `template`, `data`, `status`, `attempts`, `last_error`, `sent_at`                                                                                                                                                               | admin                                               | triggers + `send-emails`                                |
 | `watched_documents`     | `url`, `label`, `story_id`, `last_hash`, `last_text`, `last_checked_at`, `last_changed_at`, `last_status`, `last_error`, `active`                                                                                                           | staff                                               | staff                                                   |
 | `watch_events`          | `document_id`, `old_text`, `new_text`, `detected_at`, `seen_by/at`                                                                                                                                                                          | staff                                               | `watch-documents`; staff mark seen                      |
-| `rate_limits` (private) | `key`, `window_start`, `count`                                                                                                                                                                                                              | —                                                   | throttle helper                                         |
+| `rate_limits` (open_private) | `key`, `window_start`, `count`                                                                                                                                                                                                              | —                                                   | throttle helper                                         |
 
 ### Workflow functions (RPC)
 
@@ -169,7 +169,7 @@ browser check of what changed (from phase 3), then a commit.
 Files: `supabase/migrations/*_core.sql`, `*_stories.sql`, `*_story_validation.sql`,
 `*_workflow.sql`, `*_reference_data.sql`; `supabase/tests/database/*.test.sql`.
 
-- Extensions, `private` schema, enums, `staff`, `settings`, role helpers.
+- Extensions, `open` and `open_private` schemas, enums, `staff`, `settings`, role helpers.
 - `stories`, `story_revisions`, `published_stories` (+ generated columns, indexes), `story_cards`.
 - JSON Schema functions generated from zod (`scripts/gen-json-schema.ts`), check constraints on
   `published_stories`, `channels`, `tax_rules`.

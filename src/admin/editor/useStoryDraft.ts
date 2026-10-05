@@ -8,7 +8,7 @@ import { sameDocument, setIn, type Path } from '../doc'
 import { errorCode, errorMessage } from '../errors'
 import { call, supabase } from '../supabase'
 
-export type StoryRow = Database['public']['Tables']['stories']['Row']
+export type StoryRow = Database['open']['Tables']['stories']['Row']
 
 type Saved = {
   content: unknown

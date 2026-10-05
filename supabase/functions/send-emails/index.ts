@@ -81,7 +81,10 @@ Deno.serve(async (req) => {
   const service = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
+    {
+      db: { schema: 'open' },
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
   )
   const { data, error } = await service.rpc('claim_emails', { p_limit: 50 })
   if (error) {

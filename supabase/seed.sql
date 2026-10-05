@@ -18,7 +18,7 @@ values (
   jsonb_build_object('sub', '10000000-0000-4000-8000-000000000001', 'email', 'admin@tod.test', 'email_verified', true),
   'email', now(), now()
 );
-insert into public.staff (user_id, name, role) values ('10000000-0000-4000-8000-000000000001', 'Туршилтын админ', 'admin');
+insert into open.staff (user_id, name, role) values ('10000000-0000-4000-8000-000000000001', 'Туршилтын админ', 'admin');
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -37,7 +37,7 @@ values (
   jsonb_build_object('sub', '10000000-0000-4000-8000-000000000002', 'email', 'editor@tod.test', 'email_verified', true),
   'email', now(), now()
 );
-insert into public.staff (user_id, name, role) values ('10000000-0000-4000-8000-000000000002', 'Туршилтын редактор', 'editor');
+insert into open.staff (user_id, name, role) values ('10000000-0000-4000-8000-000000000002', 'Туршилтын редактор', 'editor');
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -56,19 +56,19 @@ values (
   jsonb_build_object('sub', '10000000-0000-4000-8000-000000000003', 'email', 'reviewer@tod.test', 'email_verified', true),
   'email', now(), now()
 );
-insert into public.staff (user_id, name, role) values ('10000000-0000-4000-8000-000000000003', 'Туршилтын хянагч', 'reviewer');
+insert into open.staff (user_id, name, role) values ('10000000-0000-4000-8000-000000000003', 'Туршилтын хянагч', 'reviewer');
 
-insert into public.channels (id, sort_order, content) values
+insert into open.channels (id, sort_order, content) values
   ('d-parliament', 1, $seed${"id":"d-parliament","name":"D-Parliament","url":"https://d.parliament.mn/","description":"УИХ-д өргөн мэдүүлсэн хуулийн төсөлд санал өгөх систем.","source":{"title":"Хуулийн төсөлд 'D-Parliament' аппликейшнаар санал өгөх боломжтой боллоо","publisher":"iToim.mn","url":"https://itoim.mn/article/hig2A/32588","publishedAt":"2022-04-05"}}$seed$::jsonb),
   ('legalinfo-bills', 2, $seed${"id":"legalinfo-bills","name":"legalinfo.mn — Хуулийн төсөлд санал өгөх","url":"https://legalinfo.mn/mn/discussion?id=1","description":"Хуулийн төслүүдэд бүртгэлтэй хэрэглэгч санал өгнө.","source":{"title":"Эрх зүйн мэдээллийн нэгдсэн системийн тусламж","publisher":"legalinfo.mn","url":"https://legalinfo.mn/en/about/16106883681171"}}$seed$::jsonb),
   ('legalinfo-regulations', 3, $seed${"id":"legalinfo-regulations","name":"legalinfo.mn — ЗХХА-ын төсөлд санал өгөх","url":"https://legalinfo.mn/mn/discussion?id=2","description":"Журам зэрэг захиргааны хэм хэмжээний актын төсөлд бүртгэлтэй хэрэглэгч санал өгнө.","source":{"title":"Эрх зүйн мэдээллийн нэгдсэн системийн тусламж","publisher":"legalinfo.mn","url":"https://legalinfo.mn/en/about/16106883681171"}}$seed$::jsonb),
   ('e-mongolia', 4, $seed${"id":"e-mongolia","name":"E-Mongolia — «Улсын Их Хурал таныг сонсож байна»","url":"https://e-mongolia.mn/","description":"Энэ цэсээр УИХ-д санал, хүсэлт илгээнэ.","source":{"title":"С.Бямбацогт: Хойшлуулсан хуралдаан, шийдэгдээгүй асуудал бүрийн ард улс орны хөгжил хоцорч, айл өрхийн амьдралд тулгамдсан асуудлууд хүлээгдэж байгаа гэдгийг үргэлж санаж ажиллах ёстой","publisher":"dorgio.mn","url":"https://www.dorgio.mn/p/162402","publishedAt":"2026-09-15"},"verify":"Цэсний яг холбоосыг олж url-г солих"}$seed$::jsonb),
   ('petition', 5, $seed${"id":"petition","name":"Нийтийн өргөдөл","url":"https://petition.parliament.mn/","description":"Нийтийн ашиг сонирхлыг хөндсөн асуудлаар 18 насанд хүрсэн иргэд цахим өргөдөл гаргаж, дэмжинэ. Өргөдөл 30 хоног байршина. Дэмжлэгийн босго: ажлын хэсэг байгуулах — 33,000, хяналт шалгалт явуулах — 70,000, хуулийн төсөл санаачлах — 100,000 иргэн. Дэмжлэгийг тоон гарын үсгээр баталгаажуулна.","source":{"title":"Монгол Улсын Их Хурлын тухай хууль, 39 дүгээр зүйл","publisher":"legalinfo.mn","url":"https://legalinfo.mn/mn/detail?lawId=17140610916031"}}$seed$::jsonb);
 
-insert into public.tax_rules (id, content) values ('pit', $seed${"verified":true,"assumption":"Ойролцоо тооцоо: хуульд заасан жилийн шатлалыг 12 сард тэнцүү хуваасан; нийгмийн даатгалын шимтгэл болон бусад хөнгөлөлтийг тооцоогүй.","source":{"title":"Татварын багц хуулийн төслийг эцэслэн баталлаа","publisher":"ikon.mn","url":"https://ikon.mn/n/3ojp","publishedAt":"2026-06-26"},"lawSource":{"title":"Хувь хүний орлогын албан татварын тухай хууль","publisher":"legalinfo.mn","url":"https://legalinfo.mn/mn/detail?lawId=14410"},"years":[{"year":2026,"label":"Одоо","brackets":[{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]},{"year":2027,"label":"2027.01.01-нээс","brackets":[{"upTo":792000,"rate":0},{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]},{"year":2028,"label":"2028.01.01-нээс","brackets":[{"upTo":792000,"rate":0},{"upTo":2000000,"rate":0.01},{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]}]}$seed$::jsonb);
+insert into open.tax_rules (id, content) values ('pit', $seed${"verified":true,"assumption":"Ойролцоо тооцоо: хуульд заасан жилийн шатлалыг 12 сард тэнцүү хуваасан; нийгмийн даатгалын шимтгэл болон бусад хөнгөлөлтийг тооцоогүй.","source":{"title":"Татварын багц хуулийн төслийг эцэслэн баталлаа","publisher":"ikon.mn","url":"https://ikon.mn/n/3ojp","publishedAt":"2026-06-26"},"lawSource":{"title":"Хувь хүний орлогын албан татварын тухай хууль","publisher":"legalinfo.mn","url":"https://legalinfo.mn/mn/detail?lawId=14410"},"years":[{"year":2026,"label":"Одоо","brackets":[{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]},{"year":2027,"label":"2027.01.01-нээс","brackets":[{"upTo":792000,"rate":0},{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]},{"year":2028,"label":"2028.01.01-нээс","brackets":[{"upTo":792000,"rate":0},{"upTo":2000000,"rate":0.01},{"upTo":10000000,"rate":0.1},{"upTo":15000000,"rate":0.15},{"upTo":null,"rate":0.2}]}]}$seed$::jsonb);
 
 -- the database reaches the edge functions through the gateway container on the Docker network
-update public.settings
+update open.settings
 set site_url = 'http://localhost:5173',
     functions_url = 'http://supabase_kong_tod:8000/functions/v1';
 
@@ -80,22 +80,22 @@ declare
   at timestamptz := '2026-09-25 12:00+08';
   revision bigint;
 begin
-  if exists (select 1 from public.stories where id = story_id) then
+  if exists (select 1 from open.stories where id = story_id) then
     return;
   end if;
-  insert into public.stories (id, content, state, created_by, created_at, updated_by, updated_at)
+  insert into open.stories (id, content, state, created_by, created_at, updated_by, updated_at)
   values (
     story_id, doc, 'published',
     '10000000-0000-4000-8000-000000000002', at, '10000000-0000-4000-8000-000000000002', at
   );
-  insert into public.story_revisions (story_id, content, action, note, author, created_at)
+  insert into open.story_revisions (story_id, content, action, note, author, created_at)
   values (story_id, doc, 'import', 'supabase/seed', '10000000-0000-4000-8000-000000000002', at);
-  insert into public.story_revisions (story_id, content, action, author, created_at)
+  insert into open.story_revisions (story_id, content, action, author, created_at)
   values (story_id, doc, 'publish', '10000000-0000-4000-8000-000000000003', at)
   returning id into revision;
-  insert into public.published_stories
+  insert into open.published_stories
     (id, content, revision_id, first_published_at, published_at, published_by)
-  values (story_id, private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
+  values (story_id, open_private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
 end
 $do$;
 
@@ -107,22 +107,22 @@ declare
   at timestamptz := '2026-09-25 12:00+08';
   revision bigint;
 begin
-  if exists (select 1 from public.stories where id = story_id) then
+  if exists (select 1 from open.stories where id = story_id) then
     return;
   end if;
-  insert into public.stories (id, content, state, created_by, created_at, updated_by, updated_at)
+  insert into open.stories (id, content, state, created_by, created_at, updated_by, updated_at)
   values (
     story_id, doc, 'published',
     '10000000-0000-4000-8000-000000000002', at, '10000000-0000-4000-8000-000000000002', at
   );
-  insert into public.story_revisions (story_id, content, action, note, author, created_at)
+  insert into open.story_revisions (story_id, content, action, note, author, created_at)
   values (story_id, doc, 'import', 'supabase/seed', '10000000-0000-4000-8000-000000000002', at);
-  insert into public.story_revisions (story_id, content, action, author, created_at)
+  insert into open.story_revisions (story_id, content, action, author, created_at)
   values (story_id, doc, 'publish', '10000000-0000-4000-8000-000000000003', at)
   returning id into revision;
-  insert into public.published_stories
+  insert into open.published_stories
     (id, content, revision_id, first_published_at, published_at, published_by)
-  values (story_id, private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
+  values (story_id, open_private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
 end
 $do$;
 
@@ -134,22 +134,22 @@ declare
   at timestamptz := '2026-09-25 12:00+08';
   revision bigint;
 begin
-  if exists (select 1 from public.stories where id = story_id) then
+  if exists (select 1 from open.stories where id = story_id) then
     return;
   end if;
-  insert into public.stories (id, content, state, created_by, created_at, updated_by, updated_at)
+  insert into open.stories (id, content, state, created_by, created_at, updated_by, updated_at)
   values (
     story_id, doc, 'published',
     '10000000-0000-4000-8000-000000000002', at, '10000000-0000-4000-8000-000000000002', at
   );
-  insert into public.story_revisions (story_id, content, action, note, author, created_at)
+  insert into open.story_revisions (story_id, content, action, note, author, created_at)
   values (story_id, doc, 'import', 'supabase/seed', '10000000-0000-4000-8000-000000000002', at);
-  insert into public.story_revisions (story_id, content, action, author, created_at)
+  insert into open.story_revisions (story_id, content, action, author, created_at)
   values (story_id, doc, 'publish', '10000000-0000-4000-8000-000000000003', at)
   returning id into revision;
-  insert into public.published_stories
+  insert into open.published_stories
     (id, content, revision_id, first_published_at, published_at, published_by)
-  values (story_id, private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
+  values (story_id, open_private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
 end
 $do$;
 
@@ -161,22 +161,22 @@ declare
   at timestamptz := '2026-09-25 12:00+08';
   revision bigint;
 begin
-  if exists (select 1 from public.stories where id = story_id) then
+  if exists (select 1 from open.stories where id = story_id) then
     return;
   end if;
-  insert into public.stories (id, content, state, created_by, created_at, updated_by, updated_at)
+  insert into open.stories (id, content, state, created_by, created_at, updated_by, updated_at)
   values (
     story_id, doc, 'published',
     '10000000-0000-4000-8000-000000000002', at, '10000000-0000-4000-8000-000000000002', at
   );
-  insert into public.story_revisions (story_id, content, action, note, author, created_at)
+  insert into open.story_revisions (story_id, content, action, note, author, created_at)
   values (story_id, doc, 'import', 'supabase/seed', '10000000-0000-4000-8000-000000000002', at);
-  insert into public.story_revisions (story_id, content, action, author, created_at)
+  insert into open.story_revisions (story_id, content, action, author, created_at)
   values (story_id, doc, 'publish', '10000000-0000-4000-8000-000000000003', at)
   returning id into revision;
-  insert into public.published_stories
+  insert into open.published_stories
     (id, content, revision_id, first_published_at, published_at, published_by)
-  values (story_id, private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
+  values (story_id, open_private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
 end
 $do$;
 
@@ -188,22 +188,22 @@ declare
   at timestamptz := '2026-09-25 12:00+08';
   revision bigint;
 begin
-  if exists (select 1 from public.stories where id = story_id) then
+  if exists (select 1 from open.stories where id = story_id) then
     return;
   end if;
-  insert into public.stories (id, content, state, created_by, created_at, updated_by, updated_at)
+  insert into open.stories (id, content, state, created_by, created_at, updated_by, updated_at)
   values (
     story_id, doc, 'published',
     '10000000-0000-4000-8000-000000000002', at, '10000000-0000-4000-8000-000000000002', at
   );
-  insert into public.story_revisions (story_id, content, action, note, author, created_at)
+  insert into open.story_revisions (story_id, content, action, note, author, created_at)
   values (story_id, doc, 'import', 'supabase/seed', '10000000-0000-4000-8000-000000000002', at);
-  insert into public.story_revisions (story_id, content, action, author, created_at)
+  insert into open.story_revisions (story_id, content, action, author, created_at)
   values (story_id, doc, 'publish', '10000000-0000-4000-8000-000000000003', at)
   returning id into revision;
-  insert into public.published_stories
+  insert into open.published_stories
     (id, content, revision_id, first_published_at, published_at, published_by)
-  values (story_id, private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
+  values (story_id, open_private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
 end
 $do$;
 
@@ -215,21 +215,21 @@ declare
   at timestamptz := '2026-09-25 12:00+08';
   revision bigint;
 begin
-  if exists (select 1 from public.stories where id = story_id) then
+  if exists (select 1 from open.stories where id = story_id) then
     return;
   end if;
-  insert into public.stories (id, content, state, created_by, created_at, updated_by, updated_at)
+  insert into open.stories (id, content, state, created_by, created_at, updated_by, updated_at)
   values (
     story_id, doc, 'published',
     '10000000-0000-4000-8000-000000000002', at, '10000000-0000-4000-8000-000000000002', at
   );
-  insert into public.story_revisions (story_id, content, action, note, author, created_at)
+  insert into open.story_revisions (story_id, content, action, note, author, created_at)
   values (story_id, doc, 'import', 'supabase/seed', '10000000-0000-4000-8000-000000000002', at);
-  insert into public.story_revisions (story_id, content, action, author, created_at)
+  insert into open.story_revisions (story_id, content, action, author, created_at)
   values (story_id, doc, 'publish', '10000000-0000-4000-8000-000000000003', at)
   returning id into revision;
-  insert into public.published_stories
+  insert into open.published_stories
     (id, content, revision_id, first_published_at, published_at, published_by)
-  values (story_id, private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
+  values (story_id, open_private.published_content(doc), revision, at, at, '10000000-0000-4000-8000-000000000003');
 end
 $do$;
