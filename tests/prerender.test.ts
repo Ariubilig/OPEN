@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  escapeHtml,
+  homeHead,
   robots,
   rss,
   sitemap,
@@ -77,6 +79,22 @@ describe('storyHead', () => {
     )
     expect(html2).not.toContain(TODO)
     expect(html2).toContain(`Хууль ${copy.placeholder}`)
+  })
+
+  it('inserts "$" sequences in the text as written', () => {
+    const title = "A $& B $' C $$ D"
+    const html2 = storyHead(
+      template,
+      { ...published, story: { ...published.story, title } },
+      SITE,
+    )
+    expect(html2).toContain(`<title>${escapeHtml(title)} — Тод</title>`)
+    expect(html2).toContain(
+      `<meta property="og:title" content="${escapeHtml(title)}" />`,
+    )
+    expect(homeHead(template, "https://tod.example/$'")).toContain(
+      `<link rel="canonical" href="https://tod.example/$'/" />`,
+    )
   })
 })
 

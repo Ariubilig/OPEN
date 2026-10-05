@@ -89,15 +89,18 @@ export function storyHead(
   return replacements.reduce((html, [pattern, value]) => {
     if (!pattern.test(html))
       throw new Error(`prerender: index.html has no ${pattern.source}`)
-    return html.replace(pattern, value)
+    // a function, so "$&" or "$'" in story text is inserted as written, not as a pattern
+    return html.replace(pattern, () => value)
   }, template)
 }
 
 /** The home page's canonical URL and og:url. */
 export function homeHead(template: string, siteUrl: string): string {
+  const url = escapeHtml(`${siteUrl}/`)
   return template.replace(
     '</head>',
-    `    <link rel="canonical" href="${escapeHtml(`${siteUrl}/`)}" />\n    <meta property="og:url" content="${escapeHtml(`${siteUrl}/`)}" />\n  </head>`,
+    () =>
+      `    <link rel="canonical" href="${url}" />\n    <meta property="og:url" content="${url}" />\n  </head>`,
   )
 }
 

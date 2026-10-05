@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { emailCopy } from '../supabase/functions/_shared/emails'
 import { APP_NAME } from '../src/config'
 import { copy } from '../src/copy'
 
@@ -14,6 +15,12 @@ describe('copy', () => {
     expect(copy.principle).toBe(
       'AI тайлбарлана. Албан ёсны эх сурвалж баталгаажуулна.',
     )
+  })
+
+  it('says the same in alert emails as in the footer', () => {
+    const notOfficial = copy.footer.independent.split('. ')[1]
+    expect(notOfficial).toBe('УИХ, Засгийн газрын албан ёсны сайт биш.')
+    expect(emailCopy.notOfficial).toContain(notOfficial)
   })
 
   it('takes the product name from config', () => {

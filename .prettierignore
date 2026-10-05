@@ -10,3 +10,6 @@ supabase/seed.sql
 supabase/bootstrap.sql
 supabase/migrations/*_json_schemas.sql
 supabase/functions/_shared/story-schema.json
+
+# Auth email templates are pasted into the Supabase dashboard: keep their inline styles on one line
+supabase/templates/

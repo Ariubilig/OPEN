@@ -10,6 +10,7 @@ import Icon from '../components/Icon'
 import KeyNumbers from '../components/KeyNumbers'
 import MeaningBlock from '../components/MeaningBlock'
 import NumberExplainer from '../components/NumberExplainer'
+import NumberTag from '../components/NumberTag'
 import ParticipateBlock from '../components/ParticipateBlock'
 import ReportButton from '../components/ReportButton'
 import Positions from '../components/Positions'
@@ -115,14 +116,7 @@ function Section({
       }`}
     >
       <div className="mb-[18px] flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className={`inline-flex h-6 w-[30px] shrink-0 items-center justify-center rounded-[7px] text-overline font-extrabold tabular-nums ${
-            dark ? 'bg-highlight text-ink' : 'bg-ink text-highlight'
-          }`}
-        >
-          {String(number).padStart(2, '0')}
-        </span>
+        <NumberTag n={number} dark={dark} />
         <h2
           id={`${id}-title`}
           tabIndex={-1}

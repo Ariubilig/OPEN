@@ -29,7 +29,7 @@ import {
 } from '../editor/context'
 import DiffView from '../editor/DiffView'
 import { asPublished, downloadJson } from '../editor/documents'
-import HistoryView, { fetchRevisions } from '../editor/HistoryView'
+import HistoryView from '../editor/HistoryView'
 import { SECTION_COMPONENTS, SECTIONS } from '../editor/sections'
 import { useStoryDraft, type StoryRow } from '../editor/useStoryDraft'
 import Workflow, { type WorkflowDone } from '../editor/Workflow'
@@ -44,7 +44,7 @@ const t = adminCopy.editor
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const id = params.id ?? ''
-  const [story, list, live, revisions, team, settings, followers] =
+  const [story, list, live, publishes, team, settings, followers] =
     await Promise.all([
       maybe(supabase.from('stories').select('*').eq('id', id).maybeSingle()),
       call(
@@ -60,7 +60,15 @@ export async function loader({ params }: LoaderFunctionArgs) {
           .eq('id', id)
           .maybeSingle(),
       ),
-      fetchRevisions(id),
+      // any publish at all, like publish_story() (not only among the latest revisions)
+      call(
+        supabase
+          .from('story_revisions')
+          .select('id')
+          .eq('story_id', id)
+          .eq('action', 'publish')
+          .limit(1),
+      ),
       call(supabase.from('staff').select('user_id, name')),
       call(
         supabase.from('settings').select('require_two_person_review').single(),
@@ -77,7 +85,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     })),
     live: live?.content ?? null,
     // a correction line is only for stories that were published before
-    wasPublished: revisions.some((r) => r.action === 'publish'),
+    wasPublished: publishes.length > 0,
     names: new Map(team.map((m) => [m.user_id, m.name])),
     twoPersonRule: settings.require_two_person_review,
     followers,
