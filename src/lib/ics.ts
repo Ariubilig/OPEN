@@ -57,7 +57,10 @@ function nextDay(iso: string): string {
 
 /** 2026-10-05T03:04:05.678Z → 20261005T030405Z */
 const stamp = (now: Date) =>
-  now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  now
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '')
 
 /** A calendar file with all-day events; lines end in CRLF as the format requires. */
 export function icsCalendar(events: CalendarEvent[], now: Date): string {
