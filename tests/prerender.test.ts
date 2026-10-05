@@ -9,7 +9,8 @@ import {
   type PublishedStory,
 } from '../scripts/prerender-lib'
 import { copy } from '../src/copy'
-import { TODO } from '../src/data/schema'
+import { TODO, TOPICS } from '../src/data/schema'
+import { TOPIC_SLUGS, topicFeedPath } from '../src/lib/feeds'
 import { getStory } from './fixtures'
 
 const template = `<!doctype html>
@@ -107,6 +108,31 @@ describe('sitemap, rss, robots', () => {
     const feed = rss([published], SITE)
     expect(feed).toContain('<language>mn</language>')
     expect(feed).toContain('<pubDate>Fri, 25 Sep 2026 04:00:00 GMT</pubDate>')
+  })
+
+  it('writes a feed per topic with only the stories of that topic', () => {
+    const housing: PublishedStory = {
+      story: getStory('housing-16000')!,
+      publishedAt: '2026-09-20T04:00:00Z',
+    }
+    const feed = rss([published, housing], SITE, 'Татвар')
+    expect(feed).toContain('<title>Тод — Татвар</title>')
+    expect(feed).toContain(
+      '<atom:link href="https://tod.example/rss/tax.xml" rel="self"',
+    )
+    expect(feed).toContain('/story/tax-package-2026</link>')
+    expect(feed).not.toContain('/story/housing-16000</link>')
+    // the site-wide feed keeps both
+    expect(rss([published, housing], SITE)).toContain(
+      '/story/housing-16000</link>',
+    )
+  })
+
+  it('names every topic feed with a unique, URL-safe slug', () => {
+    const slugs = TOPICS.map((t) => TOPIC_SLUGS[t])
+    expect(new Set(slugs).size).toBe(TOPICS.length)
+    for (const slug of slugs) expect(slug).toMatch(/^[a-z]+(-[a-z]+)*$/)
+    expect(topicFeedPath('Татвар')).toBe('rss/tax.xml')
   })
 
   it('keeps crawlers out of the admin', () => {

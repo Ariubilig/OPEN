@@ -2,7 +2,8 @@
 // the sitemap and the RSS feed. No file or network access here, so tests can run it.
 import { APP_NAME } from '../src/config.ts'
 import { copy } from '../src/copy.ts'
-import { TODO, type Story } from '../src/data/schema.ts'
+import { TODO, type Story, type Topic } from '../src/data/schema.ts'
+import { topicFeedPath } from '../src/lib/feeds.ts'
 
 export type PublishedStory = {
   story: Story
@@ -121,9 +122,18 @@ export function sitemap(stories: PublishedStory[], siteUrl: string): string {
 /** RFC 822 date for RSS. */
 const rfc822 = (iso: string) => new Date(iso).toUTCString()
 
-/** The newest stories first, like a news feed. */
-export function rss(stories: PublishedStory[], siteUrl: string): string {
-  const items = [...stories]
+/** The newest stories first, like a news feed; with `topic`, only that topic's stories. */
+export function rss(
+  stories: PublishedStory[],
+  siteUrl: string,
+  topic?: Topic,
+): string {
+  const self = topic ? topicFeedPath(topic) : 'rss.xml'
+  const page = topic
+    ? `${siteUrl}/?${new URLSearchParams({ topic })}`
+    : `${siteUrl}/`
+  const items = stories
+    .filter(({ story }) => !topic || story.topics.includes(topic))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, 50)
     .map(({ story, publishedAt }) =>
@@ -142,9 +152,9 @@ export function rss(stories: PublishedStory[], siteUrl: string): string {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
     '  <channel>',
-    `    <title>${escapeHtml(`${APP_NAME} — ${copy.tagline}`)}</title>`,
-    `    <link>${escapeHtml(`${siteUrl}/`)}</link>`,
-    `    <atom:link href="${escapeHtml(`${siteUrl}/rss.xml`)}" rel="self" type="application/rss+xml" />`,
+    `    <title>${escapeHtml(`${APP_NAME} — ${topic ?? copy.tagline}`)}</title>`,
+    `    <link>${escapeHtml(page)}</link>`,
+    `    <atom:link href="${escapeHtml(`${siteUrl}/${self}`)}" rel="self" type="application/rss+xml" />`,
     `    <description>${escapeHtml(copy.feed.intro)}</description>`,
     '    <language>mn</language>',
     ...items,

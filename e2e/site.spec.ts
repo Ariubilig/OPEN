@@ -166,3 +166,15 @@ test('an upcoming step can be added to a calendar', async ({ page }) => {
   expect(text).toContain('URL:http://localhost:')
   expect(text).toContain('BEGIN:VEVENT')
 })
+
+test('choosing a topic offers its RSS feed', async ({ page }) => {
+  await page.goto('/')
+  await page
+    .getByRole('group', { name: 'Сэдэв' })
+    .getByRole('button', { name: 'Татвар' })
+    .click()
+  await expect(page.getByText('1 мэдээ')).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: '«Татвар» сэдвийн RSS' }),
+  ).toHaveAttribute('href', '/rss/tax.xml')
+})

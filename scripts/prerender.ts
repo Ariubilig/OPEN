@@ -8,7 +8,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadEnv } from 'vite'
-import { StorySchema } from '../src/data/schema.ts'
+import { StorySchema, TOPICS } from '../src/data/schema.ts'
+import { topicFeedPath } from '../src/lib/feeds.ts'
 import {
   homeHead,
   robots,
@@ -82,8 +83,11 @@ async function main() {
   }
   write('sitemap.xml', sitemap(stories, siteUrl))
   write('rss.xml', rss(stories, siteUrl))
+  // every topic, also one without stories yet: a reader can subscribe before the first one
+  for (const topic of TOPICS)
+    write(topicFeedPath(topic), rss(stories, siteUrl, topic))
   console.log(
-    `prerender: ${stories.length} story pages, sitemap.xml, rss.xml, robots.txt for ${siteUrl}`,
+    `prerender: ${stories.length} story pages, sitemap.xml, rss.xml and ${TOPICS.length} topic feeds, robots.txt for ${siteUrl}`,
   )
 }
 

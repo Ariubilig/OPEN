@@ -19,6 +19,7 @@ const PATHS = {
   flag: 'M5 21V4M5 4h11l-2 4 2 4H5',
   bookmark: 'M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z',
   share: 'M12 15V3M7 8l5-5 5 5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7',
+  rss: 'M5 11a8 8 0 0 1 8 8M5 4a15 15 0 0 1 15 15M6 19h.01',
 } as const
 
 export type IconName = keyof typeof PATHS

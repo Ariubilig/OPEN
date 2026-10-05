@@ -86,6 +86,7 @@ export const copy = {
     empty: 'Энэ шүүлтүүрт тохирох мэдээ алга.',
     sources: (n: number) => `${n} эх сурвалж`,
     count: (n: number) => `${n} мэдээ`,
+    topicRss: (topic: string) => `«${topic}» сэдвийн RSS`,
   },
   search: {
     label: 'Мэдээ хайх',
