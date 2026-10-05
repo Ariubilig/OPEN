@@ -48,3 +48,23 @@ jobs:
       # Postgres only: applies supabase/migrations and supabase/seed.sql
       - run: supabase db start
       - run: supabase test db
+
+  browser:
+    name: Browser tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # the production build against a stand-in API (e2e/mock-api.ts): no secrets needed
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

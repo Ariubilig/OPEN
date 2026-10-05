@@ -30,3 +30,9 @@ dist-ssr
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Browser tests (npm run test:e2e)
+dist-e2e
+test-results
+playwright-report
+blob-report
