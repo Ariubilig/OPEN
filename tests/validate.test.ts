@@ -104,6 +104,33 @@ describe('validateStory', () => {
       'unknown_channel $.participate[0].channel',
     ])
   })
+
+  it('warns about upcoming steps whose date has passed, only when given today', () => {
+    const s = clone(base)
+    s.timeline = [
+      {
+        date: '2026-01-10',
+        label: 'a',
+        status: 'done',
+        source: s.sources[0].id,
+      },
+      {
+        date: '2026-02-10',
+        label: 'b',
+        status: 'current',
+        source: s.sources[0].id,
+      },
+      { date: '2026-03-10', label: 'c', status: 'upcoming' },
+      { date: '2026-12-10', label: 'd', status: 'upcoming' },
+    ]
+    const overdue = (now?: string) =>
+      validateStory(s, { now })
+        .warnings.filter((w) => w.code === 'timeline_overdue')
+        .map((w) => w.path)
+    expect(overdue('2026-10-05')).toEqual(['$.timeline[2].status'])
+    expect(overdue()).toEqual([])
+    expect(validateStory(s, { now: '2026-10-05' }).errors).toEqual([])
+  })
 })
 
 describe('todosAndNotes', () => {

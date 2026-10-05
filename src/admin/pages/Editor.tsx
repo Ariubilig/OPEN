@@ -207,10 +207,13 @@ function EditorBody({
       validateStory(asPublished(content, today()), {
         storyIds: new Set(stories.map((s) => s.id)),
         channelIds: new Set(channels.map((c) => c.id)),
+        now: today(),
       }),
     [content, stories, channels],
   )
   const errors = useMemo(() => findingsByPath(report.errors), [report])
+  // upcoming steps whose date has passed: worth saying above the tabs, not only in the checks
+  const overdue = report.warnings.filter((w) => w.code === 'timeline_overdue')
 
   const api = useMemo<EditorApi>(
     () => ({
@@ -385,6 +388,14 @@ function EditorBody({
               {draft.saved.reviewNote}
             </Notice>
           )}
+        {overdue.length > 0 && (
+          <Notice tone="warning">
+            <p>{t.overdue.text(overdue.length)}</p>
+            <Button onClick={() => goTo(overdue[0].path)} className="mt-2">
+              {t.overdue.go}
+            </Button>
+          </Notice>
+        )}
 
         <Tabs tab={tab} onChange={setTab} />
 

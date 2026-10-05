@@ -2,7 +2,8 @@
 // the sitemap and the RSS feed. No file or network access here, so tests can run it.
 import { APP_NAME } from '../src/config.ts'
 import { copy } from '../src/copy.ts'
-import { TODO, type Story } from '../src/data/schema.ts'
+import { TODO, type Story, type Topic } from '../src/data/schema.ts'
+import { topicFeedPath } from '../src/lib/feeds.ts'
 
 export type PublishedStory = {
   story: Story
@@ -26,6 +27,22 @@ const clip = (s: string, max: number) =>
 export const storyUrl = (siteUrl: string, id: string) =>
   `${siteUrl}/story/${id}`
 
+/** A link-preview image (scripts/og-image.ts): its absolute URL and what it shows. */
+export type PreviewImage = { url: string; alt: string }
+
+const TWITTER_CARD = /<meta name="twitter:card" content="[^"]*" \/>/
+
+/** The Open Graph tags of a 1200×630 preview image. */
+function imageTags(image: PreviewImage): string[] {
+  return [
+    `<meta property="og:image" content="${escapeHtml(image.url)}" />`,
+    '<meta property="og:image:type" content="image/png" />',
+    '<meta property="og:image:width" content="1200" />',
+    '<meta property="og:image:height" content="630" />',
+    `<meta property="og:image:alt" content="${escapeHtml(image.alt)}" />`,
+  ]
+}
+
 /**
  * The page's <head> for one story: title, description, Open Graph and article tags, the
  * canonical URL, and NewsArticle structured data. Replaces the site-wide tags in index.html.
@@ -34,6 +51,7 @@ export function storyHead(
   template: string,
   { story, publishedAt }: PublishedStory,
   siteUrl: string,
+  image?: PreviewImage,
 ): string {
   const title = plain(story.title)
   const description = clip(plain(story.summary.text), 300)
@@ -59,6 +77,7 @@ export function storyHead(
     `<meta property="og:url" content="${escapeHtml(url)}" />`,
     `<meta property="article:published_time" content="${escapeHtml(story.publishedAt)}" />`,
     `<meta property="article:modified_time" content="${escapeHtml(publishedAt)}" />`,
+    ...(image ? imageTags(image) : []),
     // `<` escaped so the JSON can never close the script element
     `<script type="application/ld+json">${JSON.stringify(jsonLd).replaceAll('<', '\\u003c')}</script>`,
   ]
@@ -83,6 +102,14 @@ export function storyHead(
       /<meta property="og:description" content="[^"]*" \/>/,
       `<meta property="og:description" content="${escapeHtml(description)}" />`,
     ],
+    ...(image
+      ? ([
+          [
+            TWITTER_CARD,
+            '<meta name="twitter:card" content="summary_large_image" />',
+          ],
+        ] as [RegExp, string][])
+      : []),
     [/<\/head>/, `    ${extra.join('\n    ')}\n  </head>`],
   ]
   // a tag that is not in index.html (after an edit there) is a build error, not a silent miss
@@ -94,14 +121,25 @@ export function storyHead(
   }, template)
 }
 
-/** The home page's canonical URL and og:url. */
-export function homeHead(template: string, siteUrl: string): string {
+/** The home page's canonical URL and og:url, and its preview image when there is one. */
+export function homeHead(
+  template: string,
+  siteUrl: string,
+  image?: PreviewImage,
+): string {
   const url = escapeHtml(`${siteUrl}/`)
-  return template.replace(
-    '</head>',
-    () =>
-      `    <link rel="canonical" href="${url}" />\n    <meta property="og:url" content="${url}" />\n  </head>`,
-  )
+  const tags = [
+    `<link rel="canonical" href="${url}" />`,
+    `<meta property="og:url" content="${url}" />`,
+    ...(image ? imageTags(image) : []),
+  ]
+  const html = image
+    ? template.replace(
+        TWITTER_CARD,
+        '<meta name="twitter:card" content="summary_large_image" />',
+      )
+    : template
+  return html.replace('</head>', () => `    ${tags.join('\n    ')}\n  </head>`)
 }
 
 export function sitemap(stories: PublishedStory[], siteUrl: string): string {
@@ -121,9 +159,18 @@ export function sitemap(stories: PublishedStory[], siteUrl: string): string {
 /** RFC 822 date for RSS. */
 const rfc822 = (iso: string) => new Date(iso).toUTCString()
 
-/** The newest stories first, like a news feed. */
-export function rss(stories: PublishedStory[], siteUrl: string): string {
-  const items = [...stories]
+/** The newest stories first, like a news feed; with `topic`, only that topic's stories. */
+export function rss(
+  stories: PublishedStory[],
+  siteUrl: string,
+  topic?: Topic,
+): string {
+  const self = topic ? topicFeedPath(topic) : 'rss.xml'
+  const page = topic
+    ? `${siteUrl}/?${new URLSearchParams({ topic })}`
+    : `${siteUrl}/`
+  const items = stories
+    .filter(({ story }) => !topic || story.topics.includes(topic))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, 50)
     .map(({ story, publishedAt }) =>
@@ -142,9 +189,9 @@ export function rss(stories: PublishedStory[], siteUrl: string): string {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
     '  <channel>',
-    `    <title>${escapeHtml(`${APP_NAME} — ${copy.tagline}`)}</title>`,
-    `    <link>${escapeHtml(`${siteUrl}/`)}</link>`,
-    `    <atom:link href="${escapeHtml(`${siteUrl}/rss.xml`)}" rel="self" type="application/rss+xml" />`,
+    `    <title>${escapeHtml(`${APP_NAME} — ${topic ?? copy.tagline}`)}</title>`,
+    `    <link>${escapeHtml(page)}</link>`,
+    `    <atom:link href="${escapeHtml(`${siteUrl}/${self}`)}" rel="self" type="application/rss+xml" />`,
     `    <description>${escapeHtml(copy.feed.intro)}</description>`,
     '    <language>mn</language>',
     ...items,

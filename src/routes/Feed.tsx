@@ -21,6 +21,7 @@ import {
   type Group,
   type Topic,
 } from '../data/schema'
+import { topicFeedPath } from '../lib/feeds'
 import { parseGroup } from '../lib/groups'
 import { scrollBehavior } from '../lib/motion'
 import { matchesQuery } from '../lib/search'
@@ -217,14 +218,27 @@ export default function Feed() {
             onSelect={(t) => setFilter({ type, topic: t })}
           />
           {filtered && (
-            <button
-              type="button"
-              onClick={clear}
-              className="-my-1.5 inline-flex min-h-11 items-center gap-1.5 self-end text-small font-semibold text-accent underline underline-offset-3 hover:no-underline"
-            >
-              <Icon name="close" className="size-4" />
-              {copy.feed.clear}
-            </button>
+            <div className="-my-1.5 flex flex-wrap items-center justify-end gap-x-5">
+              {/* the chosen topic's feed (written at build time by scripts/prerender.ts) */}
+              {topic && (
+                <a
+                  href={`/${topicFeedPath(topic)}`}
+                  type="application/rss+xml"
+                  className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-accent underline underline-offset-3 hover:no-underline"
+                >
+                  <Icon name="rss" className="size-4" />
+                  {copy.feed.topicRss(topic)}
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={clear}
+                className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-accent underline underline-offset-3 hover:no-underline"
+              >
+                <Icon name="close" className="size-4" />
+                {copy.feed.clear}
+              </button>
+            </div>
           )}
         </div>
 

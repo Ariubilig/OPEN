@@ -3,8 +3,8 @@
 //   reviewer: request changes, publish (not their own last change: two-person rule), unpublish
 // Every step works on the saved version; the database checks the same rules again.
 import { useState, type FormEvent } from 'react'
+import Modal from '../../components/Modal'
 import { adminCopy } from '../copy'
-import Dialog from '../Dialog'
 import { errorCode, errorMessage, problemList } from '../errors'
 import { call, hasRole, supabase, type StaffMember } from '../supabase'
 import { Button, Field, Notice, TextArea } from '../ui'
@@ -176,9 +176,10 @@ export default function Workflow({
         )}
       </div>
 
-      <Dialog
+      <Modal
         open={step !== null}
         title={step ? titles[step] : ''}
+        closeLabel={adminCopy.common.close}
         onClose={() => setStep(null)}
       >
         {step && (
@@ -256,7 +257,7 @@ export default function Workflow({
             </div>
           </form>
         )}
-      </Dialog>
+      </Modal>
     </>
   )
 }

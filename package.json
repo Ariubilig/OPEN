@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "check": "tsx scripts/check.ts",
     "check:strict": "tsx scripts/check.ts --strict",
     "format": "prettier --write .",
@@ -18,6 +19,7 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:seed": "tsx scripts/gen-seed.ts",
+    "db:sql-editor": "tsx scripts/gen-sql-editor.ts",
     "db:types": "tsx scripts/gen-types.ts"
   },
   "dependencies": {
@@ -31,12 +33,17 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@fontsource/geologica": "^5.3.0",
+    "@playwright/test": "^1.63.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "prettier": "^3.9.9",
+    "satori": "^0.35.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "~6.0.2",
@@ -45,5 +52,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "fflate": "0.7.5"
   }
 }

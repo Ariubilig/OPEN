@@ -263,7 +263,7 @@ Done when: `supabase db reset` and `supabase test db` pass.
   Saved as a draft with action `ai_draft`. Without `ANTHROPIC_API_KEY` it answers "not configured".
 - Admin page "AI ноорог".
 - Built as a background job (`ai_drafts` table, `EdgeRuntime.waitUntil`): the function answers
-  202 at once and the admin polls, since a draft can outlast a request. Model `claude-opus-5`
+  202 at once and the admin polls, since a draft can outlast a request. Model `claude-opus-5-5`
   (`ANTHROPIC_MODEL`), adaptive thinking, effort `high` (`ANTHROPIC_EFFORT`), structured output
   against the story schema (citations limited to the document or `TODO_VERIFY`), server-side
   refusal fallbacks (`fallbacks: "default"`). Jobs still running after 15 minutes are marked failed.

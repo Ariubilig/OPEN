@@ -86,6 +86,7 @@ export const copy = {
     empty: 'Энэ шүүлтүүрт тохирох мэдээ алга.',
     sources: (n: number) => `${n} эх сурвалж`,
     count: (n: number) => `${n} мэдээ`,
+    topicRss: (topic: string) => `«${topic}» сэдвийн RSS`,
   },
   search: {
     label: 'Мэдээ хайх',
@@ -101,6 +102,9 @@ export const copy = {
     added: 'Нүүр хуудасны «Дагаж буй» хэсэгт нэмлээ.',
     removed: '«Дагаж буй» хэсгээс хаслаа.',
     unfollow: (title: string) => `Дагахаа болих: ${title}`,
+    changed: 'Шат өөрчлөгдсөн',
+    changedHint: 'Таныг сүүлд нээснээс хойш',
+    before: (stage: string) => `Өмнө нь: ${stage}`,
   },
   share: {
     label: 'Хуваалцах',
@@ -212,6 +216,10 @@ export const copy = {
     done: 'Болсон',
     upcoming: 'Хүлээгдэж буй',
     next: 'Дараагийн шат',
+  },
+  calendar: {
+    add: 'Календарьт нэмэх',
+    file: '.ics файл',
   },
   participate: {
     intro:
