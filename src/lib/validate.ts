@@ -12,6 +12,7 @@ import {
   type TaxRules,
 } from '../data/schema'
 import { sourceRefs } from './sources'
+import { isOverdue } from './timeline'
 
 export type ErrorCode =
   | 'schema'
@@ -33,6 +34,7 @@ export type WarningCode =
   | 'duplicate_evidence_step'
   | 'self_related'
   | 'evaluative_word'
+  | 'timeline_overdue'
 
 export type Finding<C extends string = string> = {
   code: C
@@ -60,6 +62,8 @@ export type StoryContext = {
   storyIds?: ReadonlySet<string>
   /** ids of the official channels; participate entries are checked against it when given */
   channelIds?: ReadonlySet<string>
+  /** today as YYYY-MM-DD; upcoming steps dated before it are reported when given */
+  now?: string
 }
 
 // Evaluative word stems (warning only). Matched at the start of a word; Mongolian adds suffixes.
@@ -197,6 +201,16 @@ export function storyRules(
       )
     prevDate = t.date
   })
+  const now = ctx.now
+  if (now)
+    s.timeline.forEach((t, i) => {
+      if (isOverdue(t, now))
+        warn(
+          'timeline_overdue',
+          `$.timeline[${i}].status`,
+          `"upcoming" step is dated ${t.date}, which has passed`,
+        )
+    })
 
   // featured stories are full explainers
   if (s.featured) {

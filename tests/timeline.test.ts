@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { getStory } from './fixtures'
 import type { TimelineItem } from '../src/data/schema'
-import { countdown, nextDatedIndex, stageSummary } from '../src/lib/timeline'
+import {
+  countdown,
+  isOverdue,
+  nextDatedIndex,
+  stageSummary,
+} from '../src/lib/timeline'
 
 const step = (
   status: TimelineItem['status'],
@@ -43,6 +48,28 @@ describe('nextDatedIndex', () => {
         step('upcoming', '2027-01-01'),
       ]),
     ).toBe(3)
+  })
+})
+
+describe('isOverdue', () => {
+  const now = '2026-10-05'
+  it('flags an upcoming step whose date has passed', () => {
+    expect(isOverdue(step('upcoming', '2026-10-04'), now)).toBe(true)
+  })
+  it('leaves today, later dates, undated steps and other statuses alone', () => {
+    expect(isOverdue(step('upcoming', now), now)).toBe(false)
+    expect(isOverdue(step('upcoming', '2026-11-01'), now)).toBe(false)
+    expect(isOverdue(step('upcoming', null), now)).toBe(false)
+    expect(isOverdue(step('upcoming', 'TODO_VERIFY'), now)).toBe(false)
+    expect(isOverdue(step('done', '2026-01-01'), now)).toBe(false)
+    expect(isOverdue(step('current', '2026-01-01'), now)).toBe(false)
+  })
+  it('reads half-filled working copies', () => {
+    expect(isOverdue({}, now)).toBe(false)
+    expect(isOverdue({ status: 'upcoming', date: 20261001 }, now)).toBe(false)
+    expect(isOverdue({ status: 'upcoming', date: '2026-02-30' }, now)).toBe(
+      false,
+    )
   })
 })
 

@@ -24,6 +24,22 @@ export function stageSummary(timeline: TimelineItem[]): {
   return { current, next }
 }
 
+/**
+ * An upcoming step whose date has already passed: the document moved on (or the date changed)
+ * and the timeline needs updating. Takes half-filled working copies too.
+ */
+export function isOverdue(
+  step: { status?: unknown; date?: unknown },
+  now: string,
+): boolean {
+  return (
+    step.status === 'upcoming' &&
+    typeof step.date === 'string' &&
+    isIsoDate(step.date) &&
+    step.date < now
+  )
+}
+
 /** Index of the first upcoming step with a real date — the one that gets a countdown. */
 export function nextDatedIndex(timeline: TimelineItem[]): number {
   return timeline.findIndex(

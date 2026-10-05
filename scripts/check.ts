@@ -3,7 +3,7 @@
 //  - zod validation of every story (except _*.json), channels.json and taxRules.json
 //  - the publish rules of src/lib/validate.ts for non-draft stories (the same rules the database
 //    runs when a story is published, and the admin editor shows while typing)
-//  - neutrality lint (warning)
+//  - neutrality lint, and upcoming timeline steps whose date has passed (warnings)
 //  - lists every TODO_VERIFY and every `verify` note, grouped by file
 //  - --strict: any TODO_VERIFY in a non-draft story, or unverified tax rules, fails
 import { readdirSync, readFileSync } from 'node:fs'
@@ -18,6 +18,7 @@ import {
   TODO,
   type Channel,
 } from '../src/data/schema'
+import { today } from '../src/lib/format'
 import {
   taxRulesProblems,
   todosAndNotes,
@@ -214,6 +215,7 @@ for (const l of loaded) {
   const report = validateStory(l.raw, {
     storyIds: publishedIds,
     channelIds,
+    now: today(),
   })
   errors.push(...lines(l.file, report.errors))
   warnings.push(...lines(l.file, report.warnings))

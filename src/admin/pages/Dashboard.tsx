@@ -4,9 +4,11 @@ import { useMemo, useState } from 'react'
 import { Link, useLoaderData, useSearchParams } from 'react-router'
 import DataText from '../../components/DataText'
 import Icon from '../../components/Icon'
-import { formatDateTime } from '../../lib/format'
+import { formatDateTime, today } from '../../lib/format'
+import { isOverdue } from '../../lib/timeline'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { adminCopy } from '../copy'
+import { asList, asObject } from '../editor/context'
 import { call, supabase, type StoryState } from '../supabase'
 import { PageHeader, StateBadge, TextInput } from '../ui'
 
@@ -19,7 +21,7 @@ const STATES: StoryState[] = [
 ]
 
 export async function loader() {
-  const [rows, reports, changes] = await Promise.all([
+  const [rows, reports, changes, timelines] = await Promise.all([
     call(
       supabase
         .from('story_admin_list')
@@ -36,9 +38,12 @@ export async function loader() {
       .from('watch_events')
       .select('id', { count: 'exact', head: true })
       .is('seen_at', null),
+    // only the timelines, for "a step's date has passed" (half-filled copies included)
+    call(supabase.from('stories').select('id, timeline:content->timeline')),
   ])
   return {
     rows,
+    timelines,
     newReports: reports.count ?? 0,
     newChanges: changes.count ?? 0,
   }
@@ -46,7 +51,7 @@ export async function loader() {
 
 type Row = Awaited<ReturnType<typeof loader>>['rows'][number]
 
-function StoryRow({ row }: { row: Row }) {
+function StoryRow({ row, overdue }: { row: Row; overdue: number }) {
   return (
     <li className="relative grid gap-x-6 gap-y-2 rounded-card border border-line bg-surface p-4 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-accent lg:grid-cols-[minmax(0,1fr)_150px_170px_190px_110px] lg:items-center">
       <div className="min-w-0">
@@ -59,6 +64,11 @@ function StoryRow({ row }: { row: Row }) {
         <p className="mt-0.5 truncate text-meta text-muted">
           {row.id} · {row.type} · {row.stage}
         </p>
+        {overdue > 0 && (
+          <p className="mt-1.5 text-meta font-semibold text-placeholder-ink">
+            {t.overdue(overdue)}
+          </p>
+        )}
         {row.state === 'changes_requested' && row.review_note && (
           <p className="mt-1.5 text-meta text-placeholder-ink">
             <span className="font-bold">{t.reviewNote}:</span> {row.review_note}
@@ -107,12 +117,32 @@ function StoryRow({ row }: { row: Row }) {
 
 export function Component() {
   useDocumentTitle(`${t.title} · ${adminCopy.title}`)
-  const { rows, newReports, newChanges } = useLoaderData() as Awaited<
-    ReturnType<typeof loader>
-  >
+  const { rows, timelines, newReports, newChanges } =
+    useLoaderData() as Awaited<ReturnType<typeof loader>>
   const [params, setParams] = useSearchParams()
   const state = STATES.find((s) => s === params.get('state')) ?? null
+  const overdueOnly = params.get('overdue') === '1'
   const [query, setQuery] = useState('')
+  const setFilter = (key: 'state' | 'overdue', value: string | null) => {
+    const next = new URLSearchParams(params)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    setParams(next)
+  }
+
+  // upcoming steps whose date has passed, per story
+  const overdueById = useMemo(() => {
+    const now = today()
+    return new Map(
+      timelines.map((s) => [
+        s.id,
+        asList(s.timeline).filter((step) => isOverdue(asObject(step), now))
+          .length,
+      ]),
+    )
+  }, [timelines])
+  const overdueOf = (id: string | null) => overdueById.get(id ?? '') ?? 0
+  const overdueStories = rows.filter((r) => overdueOf(r.id) > 0).length
 
   const counts = useMemo(
     () =>
@@ -125,6 +155,7 @@ export function Component() {
   const shown = rows.filter(
     (r) =>
       (!state || r.state === state) &&
+      (!overdueOnly || overdueOf(r.id) > 0) &&
       (!q ||
         (r.title ?? '').toLowerCase().includes(q) ||
         (r.id ?? '').includes(q)),
@@ -135,7 +166,7 @@ export function Component() {
       key={value ?? 'all'}
       type="button"
       aria-pressed={state === value}
-      onClick={() => setParams(value ? { state: value } : {})}
+      onClick={() => setFilter('state', value)}
       className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-small font-semibold whitespace-nowrap transition-colors ${
         state === value
           ? 'bg-ink text-white'
@@ -173,6 +204,16 @@ export function Component() {
           <Icon name="arrowRight" className="size-4" />
         </Link>
       )}
+      {overdueStories > 0 && !overdueOnly && (
+        <Link
+          to="/admin?overdue=1"
+          className="flex min-h-11 items-center gap-2 self-start rounded-xl border border-placeholder-line bg-placeholder-bg px-4 py-2 text-small font-semibold text-placeholder-ink"
+        >
+          <Icon name="calendar" className="size-4" />
+          {t.overdueCount(overdueStories)}
+          <Icon name="arrowRight" className="size-4" />
+        </Link>
+      )}
       {newChanges > 0 && (
         <Link
           to="/admin/watch"
@@ -192,6 +233,25 @@ export function Component() {
         >
           {tab(null, t.all, rows.length)}
           {STATES.map((s) => tab(s, adminCopy.states[s], counts[s]))}
+          {overdueStories > 0 && (
+            <button
+              type="button"
+              aria-pressed={overdueOnly}
+              onClick={() => setFilter('overdue', overdueOnly ? null : '1')}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-small font-semibold whitespace-nowrap transition-colors ${
+                overdueOnly
+                  ? 'bg-ink text-white'
+                  : 'bg-placeholder-bg text-placeholder-ink shadow-[inset_0_0_0_1px_var(--placeholder-line)] hover:shadow-[inset_0_0_0_1px_var(--ink)]'
+              }`}
+            >
+              {t.overdueFilter}
+              <span
+                className={`tabular-nums ${overdueOnly ? 'text-highlight' : ''}`}
+              >
+                {overdueStories}
+              </span>
+            </button>
+          )}
         </div>
         <TextInput
           type="search"
@@ -216,7 +276,7 @@ export function Component() {
       {shown.length > 0 ? (
         <ul className="-mt-2 flex flex-col gap-2">
           {shown.map((row) => (
-            <StoryRow key={row.id} row={row} />
+            <StoryRow key={row.id} row={row} overdue={overdueOf(row.id)} />
           ))}
         </ul>
       ) : (
