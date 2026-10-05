@@ -1,10 +1,48 @@
 import { copy } from '../copy'
-import type { TimelineItem } from '../data/schema'
-import { today } from '../lib/format'
+import { isIsoDate, type TimelineItem } from '../data/schema'
+import { downloadFile } from '../lib/download'
+import { formatDate, today } from '../lib/format'
+import { icsCalendar, stepEvent } from '../lib/ics'
 import { countdown, nextDatedIndex } from '../lib/timeline'
 import { MarkedText } from './CitedText'
 import DataText from './DataText'
+import Icon from './Icon'
 import { StepDate, StepLabel } from './Stage'
+
+/** "Календарьт нэмэх": the step as an all-day event in a calendar file. */
+function CalendarButton({
+  story,
+  step,
+  index,
+}: {
+  story: { id: string; title: string }
+  step: TimelineItem & { date: string }
+  index: number
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        downloadFile(
+          `${story.id}-${step.date}.ics`,
+          icsCalendar(
+            [stepEvent(story, step, index, window.location.origin)],
+            new Date(),
+          ),
+          'text/calendar;charset=utf-8',
+        )
+      }
+      className="-ml-1 inline-flex min-h-11 items-center gap-1.5 self-start rounded-full px-1 text-small font-semibold text-accent hover:text-accent-strong"
+    >
+      <Icon name="calendar" className="size-4" />
+      {copy.calendar.add}
+      <span className="sr-only">
+        : <DataText value={step.label} />, {formatDate(step.date)} (
+        {copy.calendar.file})
+      </span>
+    </button>
+  )
+}
 
 function Dot({ status }: { status: TimelineItem['status'] }) {
   const base = 'relative mt-0.5 block size-3.5 rounded-full'
@@ -26,7 +64,14 @@ function Dot({ status }: { status: TimelineItem['status'] }) {
  * Vertical stepper, date first: done = ink dot, current = highlighter + "Одоо энд",
  * upcoming = dashed. The next upcoming step with a date gets a countdown.
  */
-export default function Timeline({ items }: { items: TimelineItem[] }) {
+export default function Timeline({
+  items,
+  story,
+}: {
+  items: TimelineItem[]
+  /** the story the steps belong to: future dated steps get "Календарьт нэмэх" */
+  story?: { id: string; title: string }
+}) {
   const now = today()
   const next = nextDatedIndex(items)
 
@@ -95,6 +140,17 @@ export default function Timeline({ items }: { items: TimelineItem[] }) {
                   )}
                 </p>
               )}
+              {story &&
+                t.status === 'upcoming' &&
+                t.date !== null &&
+                isIsoDate(t.date) &&
+                t.date >= now && (
+                  <CalendarButton
+                    story={story}
+                    step={{ ...t, date: t.date }}
+                    index={i}
+                  />
+                )}
               {t.status === 'current' && (
                 <p className="mt-1 inline-flex h-6 items-center self-start rounded-full bg-highlight px-2.5 text-overline font-extrabold text-ink shadow-[inset_0_0_0_1.5px_var(--ink)]">
                   {copy.timeline.here}

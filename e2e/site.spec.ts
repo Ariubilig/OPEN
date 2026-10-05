@@ -148,3 +148,21 @@ test('the About page and the not-found page', async ({ page }) => {
     'Хуудас олдсонгүй',
   )
 })
+
+test('an upcoming step can be added to a calendar', async ({ page }) => {
+  await page.goto('/story/tax-package-2026')
+  const timeline = page.getByRole('region', { name: 'Хаана явж байна?' })
+  const buttons = timeline.getByRole('button', { name: /Календарьт нэмэх/ })
+  // the two dated steps still ahead (2027 and 2028), nothing for past or undated ones
+  await expect(buttons).toHaveCount(2)
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    buttons.first().click(),
+  ])
+  expect(download.suggestedFilename()).toBe('tax-package-2026-2027-01-01.ics')
+  const ics = await (await download.createReadStream()).toArray()
+  const text = Buffer.concat(ics).toString('utf8')
+  expect(text).toContain('DTSTART;VALUE=DATE:20270101')
+  expect(text).toContain('URL:http://localhost:')
+  expect(text).toContain('BEGIN:VEVENT')
+})

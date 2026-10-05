@@ -7,6 +7,7 @@ import {
   type Group,
   type Stage,
 } from '../../data/schema'
+import { downloadFile } from '../../lib/download'
 import { setIn } from '../doc'
 
 export const AFFECT_DEFAULT_GROUP: Group = 'Иргэн'
@@ -95,13 +96,9 @@ export function asPublished(doc: unknown, today: string): unknown {
 
 /** Save a document as a pretty-printed JSON file in the browser. */
 export function downloadJson(fileName: string, value: unknown) {
-  const blob = new Blob([`${JSON.stringify(value, null, 2)}\n`], {
-    type: 'application/json',
-  })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = fileName
-  a.click()
-  URL.revokeObjectURL(url)
+  downloadFile(
+    fileName,
+    `${JSON.stringify(value, null, 2)}\n`,
+    'application/json',
+  )
 }

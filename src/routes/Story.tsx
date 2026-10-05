@@ -258,7 +258,10 @@ export function StoryPage({
               number={number('timeline')}
               title={copy.story.sections.timeline}
             >
-              <Timeline items={story.timeline} />
+              <Timeline
+                items={story.timeline}
+                story={preview ? undefined : story}
+              />
             </Section>
           )}
 
