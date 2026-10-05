@@ -101,6 +101,9 @@ export const copy = {
     added: 'Нүүр хуудасны «Дагаж буй» хэсэгт нэмлээ.',
     removed: '«Дагаж буй» хэсгээс хаслаа.',
     unfollow: (title: string) => `Дагахаа болих: ${title}`,
+    changed: 'Шат өөрчлөгдсөн',
+    changedHint: 'Таныг сүүлд нээснээс хойш',
+    before: (stage: string) => `Өмнө нь: ${stage}`,
   },
   share: {
     label: 'Хуваалцах',

@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { APP_NAME } from '../config'
 import { copy } from '../copy'
 import { TODO, type Story } from '../data/schema'
-import { toggleFollow, useFollowing } from '../lib/following'
+import {
+  markSeen,
+  snapshotOf,
+  toggleFollow,
+  useFollowing,
+} from '../lib/following'
 import Icon from './Icon'
 
 const BUTTON =
@@ -17,6 +22,11 @@ export default function StoryActions({ story }: { story: Story }) {
   const [message, setMessage] = useState('')
   const timer = useRef<number | undefined>(undefined)
   useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  // the reader has seen where a followed story is now (also right after following it)
+  useEffect(() => {
+    if (followed) markSeen(story.id, snapshotOf(story))
+  }, [followed, story])
 
   function say(text: string) {
     setMessage(text)
