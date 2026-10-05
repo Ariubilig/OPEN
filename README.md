@@ -143,10 +143,11 @@ Sign in at `https://<domain>/admin` and invite the rest of the team from **То�
 (the database calls `send-emails` and `watch-documents` there), and the static host's deploy hook
 (publishing a story rebuilds the prerendered pages).
 
-**6. Static host.** Build command `npm run build`, output `dist/`. Environment:
-`VITE_SUPABASE_URL=https://<ref>.supabase.co`, `VITE_SUPABASE_ANON_KEY=<publishable key>`,
-`SITE_URL=https://<domain>`. The prerender reads the published stories from the API, so the
-build needs network access.
+**6. Static host.** Build command `npm run build`, output `dist/`. The build reads
+`VITE_SUPABASE_URL=https://<ref>.supabase.co`, `VITE_SUPABASE_ANON_KEY=<publishable key>` and
+`SITE_URL=https://<domain>` from `.env.production` (public values only; variables set on the host
+override it). The prerender reads the published stories from the API, so the build needs network
+access.
 
 - **Vercel:** `vercel.json` (clean URLs, rewrites to the app, security headers).
 - **Netlify:** `public/_redirects` and `public/_headers` (keep the headers in step with

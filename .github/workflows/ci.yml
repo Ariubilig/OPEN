@@ -34,7 +34,7 @@ jobs:
           npm run db:seed
           npm run db:sql-editor
           git diff --exit-code -- supabase/seed.sql supabase/bootstrap.sql supabase/setup/schema.sql
-      # without SITE_URL and the Supabase keys the prerender step only writes robots.txt
+      # .env.production points the prerender at the live API (published stories, public key)
       - run: npm run build
 
   database:
