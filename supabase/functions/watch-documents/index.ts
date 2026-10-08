@@ -1,4 +1,4 @@
-// POST { ids?: number[] } — checks the watched official pages (public.watched_documents).
+// POST { ids?: number[] } — checks the watched official pages (open.watched_documents).
 //
 // pg_cron calls it every hour: pages not checked for 20 hours, so each about once a day. Staff
 // (their own session) can check sooner: "check now" takes pages not checked for 6 hours, and

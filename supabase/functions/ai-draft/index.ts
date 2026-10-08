@@ -4,7 +4,7 @@
 // Starts a background job and answers 202 { jobId } at once (a draft can take longer than a
 // request may stay open). The job asks Claude for a story in the schema, from that one document,
 // and saves it as a working copy in the caller's name (revision 'ai_draft'). The admin watches
-// the job in public.ai_drafts. Needs the ANTHROPIC_API_KEY secret; ANTHROPIC_MODEL and
+// the job in open.ai_drafts. Needs the ANTHROPIC_API_KEY secret; ANTHROPIC_MODEL and
 // ANTHROPIC_EFFORT are optional.
 import Anthropic from 'npm:@anthropic-ai/sdk@0.128.0'
 import { createClient } from 'npm:@supabase/supabase-js@2.117.2'
